@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/sonnam0904/telebit/compare/v2.0.1...v2.0.2) (2026-05-28)
+
+
+### Bug Fixes
+
+* improve state management for input contexts in the TelebitFcitx5Engine class. ([312b0ab](https://github.com/sonnam0904/telebit/commit/312b0abd79229d617c787547c3fac6d916c6364c))
+
 ## [2.0.1](https://github.com/sonnam0904/telebit/compare/v2.0.0...v2.0.1) (2026-04-03)
 
 
