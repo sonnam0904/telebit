@@ -24,6 +24,12 @@ static std::string convert_word(const std::string& word) {
     std::transform(lower.begin(), lower.end(), lower.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
+    // Telex: "gif" -> "gì". "f" is huyền on "i", but "gi" is also a valid onset so the
+    // generic parser would treat the whole syllable as onset "gi" and drop the tone.
+    if (lower == "gif") {
+        return applyWordCase("gì", word);
+    }
+
     std::string escapedRaw;
     if (applyEscapeRules(word, lower, escapedRaw)) {
         return escapedRaw;

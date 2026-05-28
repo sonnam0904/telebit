@@ -32,6 +32,12 @@ static void test_vowels() {
     assert(telex_to_unicode("aasz") == "ấz");
 }
 
+static void test_special_gif() {
+    assert(telex_to_unicode("gif") == "gì");
+    assert(telex_to_unicode("Gif") == "Gì");
+    assert(telex_to_unicode("GIF") == "GÌ");
+}
+
 static void test_combined() {
     assert(telex_to_unicode("tieengs") == "tiếng");
     assert(telex_to_unicode("vieetj") == "việt");
@@ -322,6 +328,7 @@ static void test_incremental_typing_detection() {
 int main() {
     test_tones();
     test_vowels();
+    test_special_gif();
     test_combined();
     test_uy_tone_placement();
     test_english_with_w();
