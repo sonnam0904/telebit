@@ -116,6 +116,14 @@ Nếu trước đó bạn dùng bộ gõ **vnkey** cũ và muốn chuyển sang 
 
 ## 3. Cài addon `telebit-fcitx5` cho fcitx5
 
+<a id="install-menu"></a>
+
+> **Menu chọn cách cài đặt (có 3 cách — bấm để nhảy nhanh):**
+>
+> - **CMake (thủ công)**: [`/usr` (system-wide)](#install-cmake-system) · [`$HOME/.local` (user-local)](#install-cmake-user)
+> - **Gói cài sẵn**: [`.deb` (Ubuntu/Debian)](#install-deb) · [`.rpm` (Fedora/CentOS)](#install-rpm)
+> - **Cài nhanh**: [`install.sh`](#install-script)
+
 ### 3.1. Yêu cầu
 
 - Đã cài **fcitx5** và header phát triển (tuỳ distro: `libfcitx5core-dev`, `fcitx5-devel`, …).
@@ -141,6 +149,8 @@ sudo pacman -S --needed fcitx5 fcitx5-configtool
 
 - **Cài toàn hệ thống** (đề xuất, cần `sudo`):
 
+<a id="install-cmake-system"></a>
+
 ```bash
 cd telebit-fcitx5
 cmake -B build -DCMAKE_INSTALL_PREFIX=/usr .
@@ -149,6 +159,8 @@ sudo cmake --install build
 ```
 
 - **Cài cho user hiện tại** (không dùng `sudo`, cài vào `$HOME/.local`):
+
+<a id="install-cmake-user"></a>
 
 ```bash
 cd telebit-fcitx5
@@ -166,6 +178,8 @@ fcitx5 -r
 Nếu mới cài lần đầu mà chưa thấy `telebit-fcitx5` trong danh sách input method, hãy **logout/login** hoặc **reboot** máy.
 
 ### 3.3. Cài bằng gói `.deb` (Ubuntu / Debian và dòng Debian)
+
+<a id="install-deb"></a>
 
 File `.deb` **không nằm trong repo**; mỗi bản được build trên GitHub Actions (hoặc bạn tự chạy `scripts/build-deb.sh` ở máy local). Gói **`telebit-fcitx5`** chứa addon fcitx5; trường `Depends` kéo **fcitx5** và gói `libfcitx5core*` phù hợp.
 
@@ -207,6 +221,8 @@ Rồi thêm input method **Telebit** (tìm `telebit-fcitx5`) trong `fcitx5-confi
 
 ### 3.4. Cài bằng gói `.rpm` (Fedora / CentOS)
 
+<a id="install-rpm"></a>
+
 File `.rpm` cũng được thiết kế tự động build trên GitHub Actions mỗi khi có bản release mới. Gói này yêu cầu hệ thống phải cài đặt sẵn `fcitx5` (có trong repository chính mặc định của Fedora).
 
 **1. Tải `.rpm`**
@@ -230,6 +246,8 @@ fcitx5 -r
 Và sau đó thiết lập thêm input method **Telebit** (tìm `telebit-fcitx5`) trong `fcitx5-configtool` như mục 4 ở dưới.
 
 ### 3.5. Cài nhanh bằng script `install.sh`
+
+<a id="install-script"></a>
 
 Ở thư mục gốc của repository:
 

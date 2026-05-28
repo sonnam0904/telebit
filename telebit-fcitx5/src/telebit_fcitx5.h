@@ -4,13 +4,36 @@
 
 #include <fcitx/addonfactory.h>
 #include <fcitx-config/configuration.h>
+#include <fcitx/inputcontextproperty.h>
 #include <fcitx/inputmethodengine.h>
 
 #include "engine.h"
 
+namespace fcitx {
+class AddonManager;
+class InputContextManager;
+} // namespace fcitx
+
+/// Per-input-context typing state (buffer, direct-rollback fields).
+struct TelebitInputState : public fcitx::InputContextProperty {
+    EngineVietCpp engine;
+    std::string rollbackRawAscii;
+    std::string rollbackDisplay;
+
+    void clearRollback() {
+        rollbackRawAscii.clear();
+        rollbackDisplay.clear();
+    }
+
+    void resetAll() {
+        engine.reset();
+        clearRollback();
+    }
+};
+
 class TelebitFcitx5Engine : public fcitx::InputMethodEngineV2 {
 public:
-    TelebitFcitx5Engine();
+    explicit TelebitFcitx5Engine(fcitx::AddonManager *manager);
 
     void keyEvent(const fcitx::InputMethodEntry &entry,
                   fcitx::KeyEvent &keyEvent) override;
@@ -34,28 +57,30 @@ private:
     );
 
     static constexpr char configFile[] = "conf/telebit-fcitx5.conf";
+    static constexpr char statePropertyName[] = "telebitState";
 
-    EngineVietCpp engine_;
+    fcitx::FactoryFor<TelebitInputState> stateFactory_{
+        [](fcitx::InputContext &) { return new TelebitInputState; }};
+
+    fcitx::InputContextManager *icManager_ = nullptr;
 
     TelebitFcitx5Config config_;
 
-    // Experimental mode state: raw ASCII typed since last word boundary,
-    // and the currently committed display string in the client.
-    std::string rollbackRawAscii_;
-    std::string rollbackDisplay_;
+    TelebitInputState *stateFor(fcitx::InputContext *ic) const;
 
-    void updatePreedit(fcitx::InputContext *ic);
+    void resetAllInputStates();
 
-    void keyEventPreedit(fcitx::InputContext *ic, fcitx::KeyEvent &keyEvent);
-    void keyEventDirectRollback(fcitx::InputContext *ic, fcitx::KeyEvent &keyEvent);
-    void rollbackClearState();
+    void updatePreedit(fcitx::InputContext *ic, TelebitInputState *state);
+
+    void keyEventPreedit(fcitx::InputContext *ic, TelebitInputState *state,
+                         fcitx::KeyEvent &keyEvent);
+    void keyEventDirectRollback(fcitx::InputContext *ic, TelebitInputState *state,
+                                fcitx::KeyEvent &keyEvent);
 };
 
 class TelebitFcitx5EngineFactory : public fcitx::AddonFactory {
 public:
     fcitx::AddonInstance *create(fcitx::AddonManager *manager) override {
-        FCITX_UNUSED(manager);
-        return new TelebitFcitx5Engine;
+        return new TelebitFcitx5Engine(manager);
     }
 };
-

@@ -7,8 +7,11 @@
 #include "vietnamese.h"
 
 #include <fcitx-config/iniparser.h>
+#include <fcitx/addonmanager.h>
 #include <fcitx/inputcontext.h>
+#include <fcitx/inputcontextmanager.h>
 #include <fcitx/inputpanel.h>
+#include <fcitx/instance.h>
 #include <fcitx/text.h>
 #include <fcitx-utils/keysym.h>
 
@@ -45,15 +48,38 @@ std::size_t commonPrefixBytes(const std::string &s1, const std::string &s2) {
 
 } // namespace
 
-TelebitFcitx5Engine::TelebitFcitx5Engine() {
+TelebitFcitx5Engine::TelebitFcitx5Engine(AddonManager *manager) {
+    if (manager && manager->instance()) {
+        icManager_ = &manager->instance()->inputContextManager();
+        icManager_->registerProperty(statePropertyName, &stateFactory_);
+    }
     reloadConfig();
+}
+
+TelebitInputState *TelebitFcitx5Engine::stateFor(InputContext *ic) const {
+    if (!ic) {
+        return nullptr;
+    }
+    return ic->propertyFor(&stateFactory_);
+}
+
+void TelebitFcitx5Engine::resetAllInputStates() {
+    if (!icManager_) {
+        return;
+    }
+    icManager_->foreach([this](InputContext *ic) {
+        if (auto *state = stateFor(ic)) {
+            state->resetAll();
+            ic->inputPanel().setClientPreedit(Text());
+            ic->updatePreedit();
+        }
+        return true;
+    });
 }
 
 void TelebitFcitx5Engine::reloadConfig() {
     readAsIni(config_, configFile);
-    // Clear state when toggling behavior.
-    rollbackClearState();
-    engine_.reset();
+    resetAllInputStates();
 }
 
 const Configuration *TelebitFcitx5Engine::getConfig() const {
@@ -63,21 +89,15 @@ const Configuration *TelebitFcitx5Engine::getConfig() const {
 void TelebitFcitx5Engine::setConfig(const RawConfig &config) {
     config_.load(config, true);
     safeSaveAsIni(config_, configFile);
-    rollbackClearState();
-    engine_.reset();
+    resetAllInputStates();
 }
 
-void TelebitFcitx5Engine::rollbackClearState() {
-    rollbackRawAscii_.clear();
-    rollbackDisplay_.clear();
-}
-
-void TelebitFcitx5Engine::updatePreedit(InputContext *ic) {
-    if (!ic) {
+void TelebitFcitx5Engine::updatePreedit(InputContext *ic, TelebitInputState *state) {
+    if (!ic || !state) {
         return;
     }
 
-    const std::string &buffer = engine_.buffer();
+    const std::string &buffer = state->engine.buffer();
     if (buffer.empty()) {
         ic->inputPanel().setClientPreedit(Text());
         ic->updatePreedit();
@@ -97,7 +117,8 @@ void TelebitFcitx5Engine::keyEvent(const InputMethodEntry &entry, KeyEvent &keyE
     FCITX_UNUSED(entry);
 
     auto *ic = keyEvent.inputContext();
-    if (!ic) {
+    auto *state = stateFor(ic);
+    if (!ic || !state) {
         return;
     }
 
@@ -111,64 +132,67 @@ void TelebitFcitx5Engine::keyEvent(const InputMethodEntry &entry, KeyEvent &keyE
     }
 
     if (useDirectRollback) {
-        keyEventDirectRollback(ic, keyEvent);
+        keyEventDirectRollback(ic, state, keyEvent);
     } else {
-        keyEventPreedit(ic, keyEvent);
+        keyEventPreedit(ic, state, keyEvent);
     }
 }
 
-void TelebitFcitx5Engine::keyEventPreedit(InputContext *ic, KeyEvent &keyEvent) {
+void TelebitFcitx5Engine::keyEventPreedit(InputContext *ic, TelebitInputState *state,
+                                          KeyEvent &keyEvent) {
     if (keyEvent.isRelease()) {
         return;
     }
 
     // If user used direct rollback mode before, ensure we don't keep stale state.
-    rollbackClearState();
+    state->clearRollback();
 
     const Key &key = keyEvent.key();
-    std::uint32_t state = 0;
+    std::uint32_t modState = 0;
     if (key.states().test(KeyState::Ctrl)) {
-        state |= MOD_CONTROL;
+        modState |= MOD_CONTROL;
     }
     if (key.states().test(KeyState::Alt)) {
-        state |= MOD_ALT;
+        modState |= MOD_ALT;
     }
 
     std::uint32_t keyval = static_cast<std::uint32_t>(key.sym());
     std::uint32_t keycode = static_cast<std::uint32_t>(key.code());
 
-    KeyResult result = engine_.process_key_event(keyval, keycode, state);
+    KeyResult result = state->engine.process_key_event(keyval, keycode, modState);
 
     if (result.handled) {
         keyEvent.filterAndAccept();
         if (!result.commit_text.empty()) {
             ic->commitString(result.commit_text);
         }
-        updatePreedit(ic);
+        updatePreedit(ic, state);
     } else {
         if (!result.commit_text.empty()) {
             ic->commitString(result.commit_text);
-            updatePreedit(ic);
+            updatePreedit(ic, state);
         }
     }
 }
 
-void TelebitFcitx5Engine::keyEventDirectRollback(InputContext *ic, KeyEvent &keyEvent) {
+void TelebitFcitx5Engine::keyEventDirectRollback(InputContext *ic,
+                                                 TelebitInputState *state,
+                                                 KeyEvent &keyEvent) {
     if (keyEvent.isRelease()) {
         return;
     }
 
     // If client does not support surrounding text, fall back to preedit mode.
     if (!ic->capabilityFlags().test(CapabilityFlag::SurroundingText)) {
-        rollbackClearState();
-        keyEventPreedit(ic, keyEvent);
+        state->clearRollback();
+        keyEventPreedit(ic, state, keyEvent);
         return;
     }
 
     const Key &key = keyEvent.key();
     // Do not interfere with shortcuts.
     if (key.states().test(KeyState::Ctrl) || key.states().test(KeyState::Alt)) {
-        rollbackClearState();
+        state->clearRollback();
         return;
     }
 
@@ -176,12 +200,14 @@ void TelebitFcitx5Engine::keyEventDirectRollback(InputContext *ic, KeyEvent &key
 
     // Backspace: update our internal buffers and rewrite the current word.
     if (sym == FcitxKey_BackSpace) {
-        if (!rollbackRawAscii_.empty()) {
-            rollbackRawAscii_.pop_back();
-            std::string newDisplay = telex_to_unicode(rollbackRawAscii_);
+        if (!state->rollbackRawAscii.empty()) {
+            state->rollbackRawAscii.pop_back();
+            std::string newDisplay = telex_to_unicode(state->rollbackRawAscii);
 
-            std::size_t prefixLen = commonPrefixBytes(rollbackDisplay_, newDisplay);
-            int charsToDelete = utf8CharCount(rollbackDisplay_.substr(prefixLen));
+            std::size_t prefixLen =
+                commonPrefixBytes(state->rollbackDisplay, newDisplay);
+            int charsToDelete =
+                utf8CharCount(state->rollbackDisplay.substr(prefixLen));
             if (charsToDelete > 0) {
                 ic->deleteSurroundingText(-charsToDelete,
                                           static_cast<unsigned int>(charsToDelete));
@@ -190,28 +216,28 @@ void TelebitFcitx5Engine::keyEventDirectRollback(InputContext *ic, KeyEvent &key
                 ic->commitString(newDisplay.substr(prefixLen));
             }
 
-            rollbackDisplay_ = newDisplay;
+            state->rollbackDisplay = newDisplay;
             keyEvent.filterAndAccept();
             return;
         }
         // Nothing tracked: let app handle backspace.
-        rollbackClearState();
+        state->clearRollback();
         return;
     }
 
     // Word boundary: space / enter / tab / punctuation / digits.
     // Clear state and allow the key to reach the application.
     if (!(('a' <= sym && sym <= 'z') || ('A' <= sym && sym <= 'Z'))) {
-        rollbackClearState();
+        state->clearRollback();
         return;
     }
 
     // Letter key: rewrite the word in-place.
-    rollbackRawAscii_.push_back(static_cast<char>(sym));
-    std::string newDisplay = telex_to_unicode(rollbackRawAscii_);
+    state->rollbackRawAscii.push_back(static_cast<char>(sym));
+    std::string newDisplay = telex_to_unicode(state->rollbackRawAscii);
 
-    std::size_t prefixLen = commonPrefixBytes(rollbackDisplay_, newDisplay);
-    int charsToDelete = utf8CharCount(rollbackDisplay_.substr(prefixLen));
+    std::size_t prefixLen = commonPrefixBytes(state->rollbackDisplay, newDisplay);
+    int charsToDelete = utf8CharCount(state->rollbackDisplay.substr(prefixLen));
     if (charsToDelete > 0) {
         ic->deleteSurroundingText(-charsToDelete,
                                   static_cast<unsigned int>(charsToDelete));
@@ -219,7 +245,7 @@ void TelebitFcitx5Engine::keyEventDirectRollback(InputContext *ic, KeyEvent &key
     if (newDisplay.size() > prefixLen) {
         ic->commitString(newDisplay.substr(prefixLen));
     }
-    rollbackDisplay_ = newDisplay;
+    state->rollbackDisplay = newDisplay;
 
     // We commit ourselves, so do not forward the original key.
     keyEvent.filterAndAccept();
@@ -228,8 +254,9 @@ void TelebitFcitx5Engine::keyEventDirectRollback(InputContext *ic, KeyEvent &key
 void TelebitFcitx5Engine::reset(const InputMethodEntry &entry, InputContextEvent &event) {
     FCITX_UNUSED(entry);
     auto *ic = event.inputContext();
-    engine_.reset();
-    rollbackClearState();
+    if (auto *state = stateFor(ic)) {
+        state->resetAll();
+    }
     if (ic) {
         ic->inputPanel().setClientPreedit(Text());
         ic->updatePreedit();
@@ -237,4 +264,3 @@ void TelebitFcitx5Engine::reset(const InputMethodEntry &entry, InputContextEvent
 }
 
 FCITX_ADDON_FACTORY(TelebitFcitx5EngineFactory);
-

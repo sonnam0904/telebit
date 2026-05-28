@@ -1,6 +1,9 @@
 # Ignore CMake build directories
 /build/
 **/build/
+/build-fcitx5/
+**/build-fcitx5/
+
 # CPack / scripts/build-deb.sh output (name is build-deb, not build)
 **/build-deb/
 **/build-rpm/
