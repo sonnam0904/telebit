@@ -1,3 +1,10 @@
+## [2.0.3](https://github.com/sonnam0904/telebit/compare/v2.0.2...v2.0.3) (2026-05-28)
+
+
+### Bug Fixes
+
+* add special case handling for "gif" in Telex conversion ([c50823e](https://github.com/sonnam0904/telebit/commit/c50823e4810362b46d0da4958e50ab3ee09e87ef))
+
 ## [2.0.2](https://github.com/sonnam0904/telebit/compare/v2.0.1...v2.0.2) (2026-05-28)
 
 
