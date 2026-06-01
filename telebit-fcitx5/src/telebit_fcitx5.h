@@ -1,17 +1,41 @@
 #pragma once
 
+#include <memory>
 #include <string>
+#include <unordered_set>
 
 #include <fcitx/addonfactory.h>
 #include <fcitx-config/configuration.h>
 #include <fcitx/inputcontextproperty.h>
 #include <fcitx/inputmethodengine.h>
+#include <fcitx/instance.h>
 
 #include "engine.h"
 
 namespace fcitx {
 class AddonManager;
 class InputContextManager;
+class Instance;
+} // namespace fcitx
+
+namespace fcitx {
+
+FCITX_CONFIGURATION(
+    TelebitForcePreeditAppConfig,
+    fcitx::Option<std::string> program{
+        this,
+        "Program",
+        "Tên ứng dụng, ví dụ: firefox / chromium / code",
+        ""
+    };
+    fcitx::Option<bool> enabled{
+        this,
+        "Enabled",
+        "Ép dùng preedit mode cho ứng dụng này",
+        false // app thêm tay trong configtool
+    };
+);
+
 } // namespace fcitx
 
 /// Per-input-context typing state (buffer, direct-rollback fields).
@@ -34,6 +58,7 @@ struct TelebitInputState : public fcitx::InputContextProperty {
 class TelebitFcitx5Engine : public fcitx::InputMethodEngineV2 {
 public:
     explicit TelebitFcitx5Engine(fcitx::AddonManager *manager);
+    ~TelebitFcitx5Engine() override;
 
     void keyEvent(const fcitx::InputMethodEntry &entry,
                   fcitx::KeyEvent &keyEvent) override;
@@ -51,9 +76,28 @@ private:
         fcitx::Option<bool> directCommitRollback{
             this,
             "DirectCommitRollback",
-            "Bật bộ gõ không gạch chân (preedit) - Hỗ trợ một số ứng dụng",
+            "Bật chế độ direct rollback (SurroundingText) nếu ứng dụng hỗ trợ",
             true
         };
+
+        fcitx::Option<std::vector<fcitx::TelebitForcePreeditAppConfig>,
+                      fcitx::NoConstrain<std::vector<fcitx::TelebitForcePreeditAppConfig>>,
+                      fcitx::DefaultMarshaller<std::vector<fcitx::TelebitForcePreeditAppConfig>>,
+                      fcitx::ListDisplayOptionAnnotation>
+            forcePreeditApps{
+                this,
+                "ForcePreeditApps",
+                "Danh sách ứng dụng sử dụng telebit",
+                std::vector<fcitx::TelebitForcePreeditAppConfig>{[] {
+                    fcitx::TelebitForcePreeditAppConfig app;
+                    *app.program.mutableValue() = "firefox";
+                    *app.enabled.mutableValue() = true; // chỉ khi chưa có file config
+                    return app;
+                }()},
+                fcitx::NoConstrain<std::vector<fcitx::TelebitForcePreeditAppConfig>>(),
+                fcitx::DefaultMarshaller<std::vector<fcitx::TelebitForcePreeditAppConfig>>(),
+                fcitx::ListDisplayOptionAnnotation("Program")
+            };
     );
 
     static constexpr char configFile[] = "conf/telebit-fcitx5.conf";
@@ -63,12 +107,21 @@ private:
         [](fcitx::InputContext &) { return new TelebitInputState; }};
 
     fcitx::InputContextManager *icManager_ = nullptr;
+    fcitx::Instance *instance_ = nullptr;
+    std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>> focusInWatcher_;
 
     TelebitFcitx5Config config_;
+    std::unordered_set<std::string> seenProgramsLower_;
+    std::unordered_set<std::string> forcePreeditEnabledLower_;
+    bool configDirty_ = false;
 
     TelebitInputState *stateFor(fcitx::InputContext *ic) const;
 
     void resetAllInputStates();
+    void rebuildSeenProgramsIndex();
+    void normalizeForcePreeditApps();
+    void recordSeenProgram(const std::string &program);
+    void saveConfigIfDirty();
 
     void updatePreedit(fcitx::InputContext *ic, TelebitInputState *state);
 

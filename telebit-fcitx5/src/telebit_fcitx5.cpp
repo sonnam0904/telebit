@@ -8,6 +8,7 @@
 
 #include <fcitx-config/iniparser.h>
 #include <fcitx/addonmanager.h>
+#include <fcitx/event.h>
 #include <fcitx/inputcontext.h>
 #include <fcitx/inputcontextmanager.h>
 #include <fcitx/inputpanel.h>
@@ -46,14 +47,113 @@ std::size_t commonPrefixBytes(const std::string &s1, const std::string &s2) {
     return i;
 }
 
+std::string toLowerAscii(std::string s) {
+    for (auto &ch : s) {
+        if (ch >= 'A' && ch <= 'Z') {
+            ch = static_cast<char>(ch - 'A' + 'a');
+        }
+    }
+    return s;
+}
+
 } // namespace
 
+// Ghi nhan ứng dụng mới vào file config
 TelebitFcitx5Engine::TelebitFcitx5Engine(AddonManager *manager) {
     if (manager && manager->instance()) {
-        icManager_ = &manager->instance()->inputContextManager();
+        instance_ = manager->instance();
+        icManager_ = &instance_->inputContextManager();
         icManager_->registerProperty(statePropertyName, &stateFactory_);
+        focusInWatcher_ = instance_->watchEvent(
+            EventType::InputContextFocusIn, EventWatcherPhase::Default,
+            [this](Event &event) {
+                auto &ice = static_cast<InputContextEvent &>(event);
+                if (auto *ic = ice.inputContext()) {
+                    recordSeenProgram(ic->program());
+                }
+            });
     }
     reloadConfig();
+}
+
+TelebitFcitx5Engine::~TelebitFcitx5Engine() {
+    saveConfigIfDirty();
+}
+
+void TelebitFcitx5Engine::normalizeForcePreeditApps() {
+    auto *list = config_.forcePreeditApps.mutableValue();
+    if (!list) {
+        return;
+    }
+
+    std::unordered_set<std::string> seen;
+    std::vector<fcitx::TelebitForcePreeditAppConfig> out;
+    out.reserve(list->size());
+
+    for (auto &rule : *list) {
+        std::string program = toLowerAscii(rule.program.value());
+        if (program.empty()) {
+            continue;
+        }
+        if (!seen.insert(program).second) {
+            continue;
+        }
+        *rule.program.mutableValue() = program;
+        out.push_back(std::move(rule));
+    }
+
+    *list = std::move(out);
+}
+
+void TelebitFcitx5Engine::rebuildSeenProgramsIndex() {
+    seenProgramsLower_.clear();
+    forcePreeditEnabledLower_.clear();
+    for (const auto &rule : config_.forcePreeditApps.value()) {
+        const auto &p = rule.program.value();
+        if (p.empty()) {
+            continue;
+        }
+        seenProgramsLower_.insert(p);
+        if (rule.enabled.value()) {
+            forcePreeditEnabledLower_.insert(p);
+        }
+    }
+}
+
+void TelebitFcitx5Engine::recordSeenProgram(const std::string &program) {
+    if (program.empty()) {
+        return;
+    }
+
+    const std::string programLower = toLowerAscii(program);
+    if (programLower.empty()) {
+        return;
+    }
+    if (seenProgramsLower_.find(programLower) != seenProgramsLower_.end()) {
+        return;
+    }
+
+    auto *list = config_.forcePreeditApps.mutableValue();
+    if (!list) {
+        return;
+    }
+
+    fcitx::TelebitForcePreeditAppConfig app;
+    *app.program.mutableValue() = programLower;
+    // Auto-discovered apps should be unchecked by default.
+    *app.enabled.mutableValue() = false;
+    list->push_back(std::move(app));
+
+    seenProgramsLower_.insert(programLower);
+    configDirty_ = true;
+}
+
+void TelebitFcitx5Engine::saveConfigIfDirty() {
+    if (!configDirty_) {
+        return;
+    }
+    safeSaveAsIni(config_, configFile);
+    configDirty_ = false;
 }
 
 TelebitInputState *TelebitFcitx5Engine::stateFor(InputContext *ic) const {
@@ -79,16 +179,23 @@ void TelebitFcitx5Engine::resetAllInputStates() {
 
 void TelebitFcitx5Engine::reloadConfig() {
     readAsIni(config_, configFile);
+    normalizeForcePreeditApps();
+    rebuildSeenProgramsIndex();
+    configDirty_ = false;
     resetAllInputStates();
 }
 
 const Configuration *TelebitFcitx5Engine::getConfig() const {
+    const_cast<TelebitFcitx5Engine *>(this)->saveConfigIfDirty();
     return &config_;
 }
 
 void TelebitFcitx5Engine::setConfig(const RawConfig &config) {
     config_.load(config, true);
+    normalizeForcePreeditApps();
     safeSaveAsIni(config_, configFile);
+    rebuildSeenProgramsIndex();
+    configDirty_ = false;
     resetAllInputStates();
 }
 
@@ -124,11 +231,13 @@ void TelebitFcitx5Engine::keyEvent(const InputMethodEntry &entry, KeyEvent &keyE
 
     bool useDirectRollback = config_.directCommitRollback.value();
 
-    // Firefox reports SurroundingText but its implementation is unreliable,
-    // which breaks direct-rollback mode. Force preedit mode there.
     const std::string &program = ic->program();
-    if (useDirectRollback && program == "firefox") {
-        useDirectRollback = false;
+    if (useDirectRollback) {
+        const std::string programLower = toLowerAscii(program);
+        if (!programLower.empty() &&
+            forcePreeditEnabledLower_.count(programLower)) {
+            useDirectRollback = false;
+        }
     }
 
     if (useDirectRollback) {
