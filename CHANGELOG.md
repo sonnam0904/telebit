@@ -1,3 +1,10 @@
+## [2.3.2](https://github.com/sonnam0904/telebit/compare/v2.3.1...v2.3.2) (2026-07-13)
+
+
+### Bug Fixes
+
+* run apt repo publishing inline in the release job instead of a separate release-triggered job ([7c4000b](https://github.com/sonnam0904/telebit/commit/7c4000b48a4d552f0684ddb121db0df64abffc7c))
+
 ## [2.3.1](https://github.com/sonnam0904/telebit/compare/v2.3.0...v2.3.1) (2026-07-13)
 
 
