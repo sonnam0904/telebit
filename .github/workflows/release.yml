@@ -5,6 +5,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -14,6 +16,7 @@ permissions:
 jobs:
   # Two runners: jammy = older libstdc++ (22.04 users); noble = 24.04+ toolchains.
   package-deb:
+    if: github.event_name != 'release'
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +46,7 @@ jobs:
           path: telebit-fcitx5/build-deb/*.deb
 
   package-rpm:
+    if: github.event_name != 'release'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +72,7 @@ jobs:
           path: telebit-fcitx5/build-rpm/*.rpm
 
   release:
+    if: github.event_name != 'release'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -88,3 +93,75 @@ jobs:
       - run: npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Triggered once semantic-release publishes the GitHub Release above (event
+  # "release: published"). Runs as its own job so it can be re-run from the
+  # Actions tab without re-doing the whole build+release pipeline.
+  publish-apt:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version from the release tag
+        id: ver
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Download release .deb assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p release-debs
+          gh release download "${{ github.event.release.tag_name }}" \
+            --repo "${{ github.repository }}" --pattern '*.deb' --dir release-debs
+
+      - name: Build the telebit metapackage (one per codename suffix)
+        run: |
+          set -euo pipefail
+          for f in release-debs/telebit-fcitx5_*_amd64.deb; do
+            ver="$(dpkg-deb -f "$f" Version)"
+            bash scripts/build-meta-deb.sh "$ver" release-debs
+          done
+
+      - name: Import APT signing key
+        id: gpg
+        run: |
+          echo "${{ secrets.APT_GPG_PRIVATE_KEY }}" | gpg --batch --import
+          keyid="$(gpg --list-secret-keys --with-colons | awk -F: '/^sec/{print $5; exit}')"
+          echo "keyid=${keyid}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout gh-pages (the published APT repo)
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: apt-repo
+
+      - name: Publish jammy + noble suites
+        run: |
+          set -euo pipefail
+          for suite in jammy noble; do
+            shopt -s nullglob
+            debs=(release-debs/*"+${suite}"*.deb)
+            shopt -u nullglob
+            if [[ ${#debs[@]} -eq 0 ]]; then
+              echo "No .deb for suite '${suite}', skipping" >&2
+              continue
+            fi
+            bash scripts/apt-repo-publish.sh "${{ github.workspace }}/apt-repo" \
+              "${{ steps.gpg.outputs.keyid }}" "${suite}" "${debs[@]}"
+          done
+
+      - name: Commit and push the APT repo
+        working-directory: apt-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No repo changes"
+          else
+            git commit -m "chore(apt): publish ${{ steps.ver.outputs.version }}"
+            git push origin gh-pages
+          fi

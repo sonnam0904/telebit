@@ -118,11 +118,34 @@ Nếu trước đó bạn dùng bộ gõ **vnkey** cũ và muốn chuyển sang 
 
 <a id="install-menu"></a>
 
-> **Menu chọn cách cài đặt (có 3 cách — bấm để nhảy nhanh):**
+> **Menu chọn cách cài đặt (có 4 cách — bấm để nhảy nhanh):**
 >
+> - **APT repo (khuyên dùng cho Ubuntu/Debian)**: [`sudo apt install telebit`](#install-apt-repo) — cài 1 lần, tự nhận bản cập nhật sau này qua `apt upgrade`.
 > - **CMake (thủ công)**: [`/usr` (system-wide)](#install-cmake-system) · [`$HOME/.local` (user-local)](#install-cmake-user)
-> - **Gói cài sẵn**: [`.deb` (Ubuntu/Debian)](#install-deb) · [`.rpm` (Fedora/CentOS)](#install-rpm)
+> - **Gói cài sẵn (tải tay)**: [`.deb` (Ubuntu/Debian)](#install-deb) · [`.rpm` (Fedora/CentOS)](#install-rpm)
 > - **Cài nhanh**: [`install.sh`](#install-script)
+
+### 3.0. Cách dễ nhất: APT repo (Ubuntu / Debian)
+
+<a id="install-apt-repo"></a>
+
+Thêm repo một lần, sau đó `apt install`/`apt upgrade` như mọi gói khác — không cần tải file `.deb` thủ công mỗi lần có bản mới:
+
+```bash
+# 1. Thêm khoá ký của repo
+curl -fsSL https://sonnam0904.github.io/telebit/pubkey.gpg \
+  | sudo gpg --dearmor -o /usr/share/keyrings/telebit-archive-keyring.gpg
+
+# 2. Thêm repo (codename Ubuntu của bạn: 22.04 = jammy, 24.04 = noble)
+echo "deb [signed-by=/usr/share/keyrings/telebit-archive-keyring.gpg] https://sonnam0904.github.io/telebit $(lsb_release -cs) main" \
+  | sudo tee /etc/apt/sources.list.d/telebit.list
+
+# 3. Cài
+sudo apt update
+sudo apt install telebit
+```
+
+`telebit` là metapackage tiện dùng, chỉ phụ thuộc vào gói thật **`telebit-fcitx5`** (nên `apt install telebit-fcitx5` cũng chạy y hệt). Sau khi cài, làm tiếp **mục 4** để bật fcitx5 và thêm input method.
 
 ### 3.1. Yêu cầu
 
@@ -351,11 +374,18 @@ Addon `telebit-fcitx5` hỗ trợ **2 chế độ chính**:
 
 ## 6. Gỡ cài đặt addon `telebit-fcitx5`
 
-### 6.1. Nếu đã cài bằng gói `.deb`
+### 6.1. Nếu đã cài bằng gói `.deb` hoặc qua APT repo
 
 ```bash
-sudo apt remove telebit-fcitx5
+sudo apt remove telebit telebit-fcitx5
 fcitx5 -r
+```
+
+Nếu cài qua APT repo (mục 3.0) và muốn gỡ luôn cả repo:
+
+```bash
+sudo rm -f /etc/apt/sources.list.d/telebit.list /usr/share/keyrings/telebit-archive-keyring.gpg
+sudo apt update
 ```
 
 ### 6.2. Nếu đã cài vào `/usr` (system-wide)
