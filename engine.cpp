@@ -81,6 +81,13 @@ KeyResult EngineVietCpp::process_key_event(std::uint32_t keyval,
         return res;
     }
 
+    // VNI: digits are modifiers of the current word; leading digits stay literal.
+    if (options_.vniMode && keyval >= '0' && keyval <= '9' && !buffer_.empty()) {
+        buffer_.push_back(static_cast<char>(keyval));
+        res.handled = true;
+        return res;
+    }
+
     // Other characters: commit buffer and let key go through.
     if (!buffer_.empty()) {
         res.commit_text = convert_buffer_for_commit();
@@ -95,6 +102,16 @@ void EngineVietCpp::reset() {
 }
 
 std::string EngineVietCpp::convert_buffer_for_commit() const {
-    return convert_buffer(buffer_);
+    if (macros_ && !macros_->empty()) {
+        std::string lower = buffer_;
+        for (auto& ch : lower) {
+            if (ch >= 'A' && ch <= 'Z') ch = static_cast<char>(ch - 'A' + 'a');
+        }
+        auto it = macros_->find(lower);
+        if (it != macros_->end()) {
+            return it->second;
+        }
+    }
+    return convert_buffer(buffer_, options_);
 }
 

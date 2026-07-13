@@ -337,6 +337,16 @@ Addon `telebit-fcitx5` hỗ trợ **2 chế độ chính**:
   - Một số ứng dụng không hỗ trợ đầy đủ tính năng của fcitx5, khi đó `telebit-fcitx5` có thể tự động quay về chế độ preedit để tránh lỗi.
   - Hành vi Undo/Redo trong một số ứng dụng có thể khác đôi chút so với chế độ mặc định. Nếu cảm thấy khó chịu, hãy tắt **DirectCommitRollback**.
 
+### 5.3. Các tuỳ chọn khác (Addons → telebit-fcitx5 → Configure)
+
+| Tuỳ chọn | Mặc định | Ý nghĩa |
+|---|---|---|
+| **SpellCheckRestore** | Bật | Kiểm tra chính tả: nếu từ vừa gõ không phải âm tiết tiếng Việt hợp lệ thì tự khôi phục về phím gốc (giúp gõ xen tiếng Anh: `person`, `address`, `cheese`… không bị biến dạng). |
+| **VNIMode** | Tắt | Chuyển sang kiểu gõ **VNI**: `1-5` = sắc/huyền/hỏi/ngã/nặng, `0` = xoá thanh, `6` = mũ (â/ê/ô), `7` = móc (ư/ơ), `8` = ă, `9` = đ. Ví dụ: `vie65t` → `việt`, `d9i` → `đi`. Gõ đúp số để ra số literal (`a11` → `a1`); đuôi số như `nam2024` được giữ nguyên. |
+| **ModernToneStyle** | Tắt | Đặt dấu kiểu mới cho vần `oa/oe/uy`: `hoá, khoẻ, thuý` (mặc định là kiểu cũ: `hóa, khỏe, thúy`). |
+| **ToggleVietnameseKey** | `Ctrl+Shift+Z` | Tạm bật/tắt gõ tiếng Việt (hữu ích khi cần gõ một đoạn tiếng Anh dài). |
+| **Macros** | (trống) | Gõ tắt: khai báo cặp *viết tắt → nội dung* (vd: `vn` → `Việt Nam`). Khi kết thúc từ (Space/Enter/dấu câu), từ viết tắt được thay bằng nội dung. |
+
 ---
 
 ## 6. Gỡ cài đặt addon `telebit-fcitx5`

@@ -1,7 +1,7 @@
-// Vietnamese Telex -> Unicode conversion (glue translation unit).
+// Vietnamese Telex/VNI -> Unicode conversion (glue translation unit).
 // Heavy logic lives in:
 // - rime_table.* (tables)
-// - canonicalize.* (escape + parsing + canonicalization + shaping)
+// - canonicalize.* (escape + parsing + canonicalization + shaping + validation)
 // - render_utf8.* (tone placement + UTF-8 rendering + casing)
 
 #include "vietnamese.h"
@@ -15,7 +15,32 @@
 
 namespace {
 
-static std::string convert_word(const std::string& word) {
+static std::string convert_word_vni(const std::string& word, const std::string& lower,
+                                    const TelexOptions& opts) {
+    using namespace telebit::internal;
+
+    bool hasDigit = std::any_of(lower.begin(), lower.end(), [](unsigned char c) {
+        return std::isdigit(c) != 0;
+    });
+    // Without digits there is nothing a VNI modifier could have changed.
+    if (!hasDigit) return word;
+
+    VniWord vni = translateVniWord(word, lower);
+    if (vni.kind == VniWord::Kind::Raw) return word;
+    if (vni.kind == VniWord::Kind::LiteralEscape) return vni.body;
+
+    std::string onset, rime;
+    splitOnsetRimeShaped(vni.body, onset, rime);
+    std::string rimeUtf8 = renderRimeUtf8(rime, vni.tone, opts.modernTone);
+
+    std::string converted = applyWordCase(onset + rimeUtf8, word);
+    if (opts.spellCheckRestore && converted != word && !isValidSyllable(onset, rime)) {
+        return word;
+    }
+    return converted;
+}
+
+static std::string convert_word(const std::string& word, const TelexOptions& opts) {
     using namespace telebit::internal;
 
     if (word.empty()) return word;
@@ -23,6 +48,10 @@ static std::string convert_word(const std::string& word) {
     std::string lower = word;
     std::transform(lower.begin(), lower.end(), lower.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+    if (opts.vniMode) {
+        return convert_word_vni(word, lower, opts);
+    }
 
     // Telex: "gif" -> "gì". "f" is huyền on "i", but "gi" is also a valid onset so the
     // generic parser would treat the whole syllable as onset "gi" and drop the tone.
@@ -41,6 +70,9 @@ static std::string convert_word(const std::string& word) {
     std::tie(body, tone, strip) = extractTone(lower);
 
     if (normalizeTripleVowels(body)) {
+        // A triple vowel only survives to this point when tone keys were removed
+        // from between the vowels — an English word like "cheese"; restore it.
+        if (opts.spellCheckRestore && tone != 0) return word;
         return applyWordCase(body, word);
     }
 
@@ -49,14 +81,18 @@ static std::string convert_word(const std::string& word) {
     rimeRaw = canonicalizeRimeByTable(rimeRaw);
 
     std::string shaped = applyShapesRime(rimeRaw);
-    std::string rimeUtf8 = renderRimeUtf8(shaped, strip ? 0 : tone);
+    std::string rimeUtf8 = renderRimeUtf8(shaped, strip ? 0 : tone, opts.modernTone);
 
-    return applyWordCase(onset + rimeUtf8, word);
+    std::string converted = applyWordCase(onset + rimeUtf8, word);
+    if (opts.spellCheckRestore && converted != word && !isValidSyllable(onset, shaped)) {
+        return word;
+    }
+    return converted;
 }
 
 }  // namespace
 
-std::string telex_to_unicode(const std::string& raw) {
+std::string telex_to_unicode(const std::string& raw, const TelexOptions& opts) {
     if (raw.empty()) return raw;
 
     std::string result;
@@ -74,13 +110,28 @@ std::string telex_to_unicode(const std::string& raw) {
         while (i < raw.size() && !std::isspace(static_cast<unsigned char>(raw[i]))) ++i;
         std::string word = raw.substr(start, i - start);
 
-        bool all_alpha = true;
+        bool has_alpha = false;
+        bool convertible = true;
         for (char c : word) {
-            if (!std::isalpha(static_cast<unsigned char>(c))) { all_alpha = false; break; }
+            unsigned char uc = static_cast<unsigned char>(c);
+            if (std::isalpha(uc)) {
+                has_alpha = true;
+            } else if (std::isdigit(uc)) {
+                // Digits are VNI modifiers; in Telex mode they make the word literal.
+                if (!opts.vniMode) { convertible = false; break; }
+            } else {
+                convertible = false;
+                break;
+            }
         }
+        if (!has_alpha) convertible = false;
 
-        result += all_alpha ? convert_word(word) : word;
+        result += convertible ? convert_word(word, opts) : word;
     }
 
     return result;
+}
+
+std::string telex_to_unicode(const std::string& raw) {
+    return telex_to_unicode(raw, TelexOptions{});
 }

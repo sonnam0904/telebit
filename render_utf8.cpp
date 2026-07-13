@@ -8,7 +8,7 @@
 namespace telebit::internal {
 
 // Returns the index (in shaped string) of the vowel that should receive the tone mark.
-static int getMainVowelIndex(const std::string& shaped) {
+static int getMainVowelIndex(const std::string& shaped, bool modernTone) {
     if (shaped.empty()) return -1;
     int first_vowel = -1;
     std::vector<int> vowel_pos;
@@ -25,6 +25,11 @@ static int getMainVowelIndex(const std::string& shaped) {
     const auto& table = getRimeMainVowelTable();
     auto it = table.find(rime_from_vowel);
     int main_idx = (it != table.end()) ? it->second : 0;
+    // Modern style: open rimes oa/oe/uy carry the tone on the second vowel.
+    if (modernTone && (rime_from_vowel == "oa" || rime_from_vowel == "oe" ||
+                       rime_from_vowel == "uy")) {
+        main_idx = 1;
+    }
     if (main_idx >= static_cast<int>(vowel_pos.size())) main_idx = 0;
     return vowel_pos[static_cast<std::size_t>(main_idx)];
 }
@@ -61,10 +66,10 @@ std::string renderVowelWithTone(char v, int tone) {
     return renderVowelNoTone(v);
 }
 
-std::string renderRimeUtf8(const std::string& shaped, int tone) {
+std::string renderRimeUtf8(const std::string& shaped, int tone, bool modernTone) {
     std::string out;
     out.reserve(shaped.size() * 3);
-    int main_idx = (tone != 0) ? getMainVowelIndex(shaped) : -1;
+    int main_idx = (tone != 0) ? getMainVowelIndex(shaped, modernTone) : -1;
 
     for (int i = 0; i < static_cast<int>(shaped.size()); ++i) {
         char c = shaped[static_cast<std::size_t>(i)];

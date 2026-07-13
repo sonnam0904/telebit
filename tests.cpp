@@ -1,10 +1,30 @@
 // Minimal C++ tests mirroring tests/test_vietnamese.py for the C++ port.
 
+#include "engine.h"
 #include "vietnamese.h"
 
 #include <cassert>
 #include <iostream>
+#include <memory>
 #include <string>
+
+static TelexOptions vni_opts() {
+    TelexOptions o;
+    o.vniMode = true;
+    return o;
+}
+
+static TelexOptions no_spell_check_opts() {
+    TelexOptions o;
+    o.spellCheckRestore = false;
+    return o;
+}
+
+static TelexOptions modern_tone_opts() {
+    TelexOptions o;
+    o.modernTone = true;
+    return o;
+}
 
 static void test_tones() {
     assert(telex_to_unicode("as") == "á");
@@ -12,8 +32,10 @@ static void test_tones() {
     assert(telex_to_unicode("ax") == "ã");
     assert(telex_to_unicode("aj") == "ạ");
     assert(telex_to_unicode("af") == "à");
-    // z is literal, does not delete tone.
-    assert(telex_to_unicode("asz") == "áz");
+    // "áz" is not a valid syllable: spell check restores the raw keys.
+    assert(telex_to_unicode("asz") == "asz");
+    // Without spell check the legacy behavior remains (z literal, tone kept).
+    assert(telex_to_unicode("asz", no_spell_check_opts()) == "áz");
 }
 
 static void test_vowels() {
@@ -27,9 +49,10 @@ static void test_vowels() {
     assert(telex_to_unicode("uow") == "ươ");
     assert(telex_to_unicode("dd") == "đ");
 
-    // Tone with z keeps tone, z is literal.
+    // Tone with z keeps tone, z is literal (only without the spell-check gate).
     assert(telex_to_unicode("aas") == "ấ");
-    assert(telex_to_unicode("aasz") == "ấz");
+    assert(telex_to_unicode("aasz") == "aasz");
+    assert(telex_to_unicode("aasz", no_spell_check_opts()) == "ấz");
 }
 
 static void test_special_gif() {
@@ -99,8 +122,121 @@ static void test_triple_vowels_english() {
     assert(telex_to_unicode("baaad") == "baad");
     // English double-d: allow typing "dd" literally via "ddd" escape (eddy).
     assert(telex_to_unicode("edddy") == "eddy");
-    // Non-contiguous triple with local double at cursor should escape IME.
-    assert(telex_to_unicode("telee") == "tele");
+    // Non-contiguous triple: not a valid syllable, spell check keeps the raw word.
+    assert(telex_to_unicode("telee") == "telee");
+}
+
+static void test_spell_check_restore() {
+    // English words whose letters look like Telex modifiers must survive intact:
+    // tone keys (s/f/r/x/j) may not delete real characters...
+    assert(telex_to_unicode("person") == "person");
+    assert(telex_to_unicode("first") == "first");
+    assert(telex_to_unicode("kangaroo") == "kangaroo");
+    // ...mid-word "dd" is not đ...
+    assert(telex_to_unicode("add") == "add");
+    assert(telex_to_unicode("daddy") == "daddy");
+    assert(telex_to_unicode("sudden") == "sudden");
+    assert(telex_to_unicode("riddle") == "riddle");
+    assert(telex_to_unicode("address") == "address");
+    // ...and double vowels in invalid syllables are not hats.
+    assert(telex_to_unicode("cheese") == "cheese");
+    assert(telex_to_unicode("employee") == "employee");
+    assert(telex_to_unicode("coffee") != "cofê");  // ff still escapes -> "cofee"
+    assert(telex_to_unicode("toolbox") == "toolbox");
+    assert(telex_to_unicode("book") == "book");
+    assert(telex_to_unicode("food") == "food");
+    assert(telex_to_unicode("zoo") == "zoo");
+
+    // Valid syllables still convert normally.
+    assert(telex_to_unicode("tieengs vieetj") == "tiếng việt");
+    assert(telex_to_unicode("nguyeenx") == "nguyễn");
+
+    // Mid-typing prefixes of valid rimes keep converting (tiê on the way to tiên).
+    assert(telex_to_unicode("tiee") == "tiê");
+
+    // Legacy behavior is available with the gate off.
+    assert(telex_to_unicode("person", no_spell_check_opts()) == "péon");
+}
+
+static void test_vni_mode() {
+    const TelexOptions vni = vni_opts();
+    // Tones 1-5 (sắc, huyền, hỏi, ngã, nặng), any position.
+    assert(telex_to_unicode("ba1", vni) == "bá");
+    assert(telex_to_unicode("cha2o", vni) == "chào");
+    assert(telex_to_unicode("ba3", vni) == "bả");
+    assert(telex_to_unicode("ba4", vni) == "bã");
+    assert(telex_to_unicode("ban5", vni) == "bạn");
+    // 0 clears the tone (mid-word; a trailing digit pair is a literal number).
+    assert(telex_to_unicode("toa10n", vni) == "toan");
+    assert(telex_to_unicode("ba10", vni) == "ba10");
+    // 6 hat, 7 horn, 8 breve, 9 đ.
+    assert(telex_to_unicode("vie65t", vni) == "việt");
+    assert(telex_to_unicode("viet65", vni) == "việt");
+    assert(telex_to_unicode("tua6n", vni) == "tuân");
+    assert(telex_to_unicode("toi6", vni) == "tôi");
+    assert(telex_to_unicode("tu7o7ng", vni) == "tương");
+    assert(telex_to_unicode("a8n", vni) == "ăn");
+    assert(telex_to_unicode("d9i", vni) == "đi");
+    assert(telex_to_unicode("di9", vni) == "đi");
+    assert(telex_to_unicode("nguye64n", vni) == "nguyễn");
+    // Casing is preserved.
+    assert(telex_to_unicode("Vie65t", vni) == "Việt");
+    assert(telex_to_unicode("VIE65T", vni) == "VIỆT");
+    // Doubled digit escapes to a literal digit.
+    assert(telex_to_unicode("a11", vni) == "a1");
+    // Trailing numbers and invalid syllables stay literal.
+    assert(telex_to_unicode("nam2024", vni) == "nam2024");
+    assert(telex_to_unicode("2024", vni) == "2024");
+    assert(telex_to_unicode("box1", vni) == "box1");
+    // Plain letters are never modifiers in VNI (English is safe).
+    assert(telex_to_unicode("person", vni) == "person");
+    assert(telex_to_unicode("address", vni) == "address");
+    assert(telex_to_unicode("cheese", vni) == "cheese");
+    assert(telex_to_unicode("caan", vni) == "caan");
+}
+
+static void test_modern_tone_style() {
+    const TelexOptions modern = modern_tone_opts();
+    // Classic placement (default): hòa, khỏe, thúy.
+    assert(telex_to_unicode("hoas") == "hóa");
+    assert(telex_to_unicode("khoer") == "khỏe");
+    assert(telex_to_unicode("thuys") == "thúy");
+    // Modern placement: hoá, khoẻ, thuý.
+    assert(telex_to_unicode("hoas", modern) == "hoá");
+    assert(telex_to_unicode("khoer", modern) == "khoẻ");
+    assert(telex_to_unicode("thuys", modern) == "thuý");
+    // Rimes with a coda are unaffected.
+    assert(telex_to_unicode("hoanfg", modern) == "hoàng");
+    assert(telex_to_unicode("ngoaij", modern) == "ngoại");
+}
+
+static void test_engine_macros_and_vni() {
+    // Macro: raw buffer "vn" expands at commit.
+    EngineVietCpp engine;
+    auto macros = std::make_shared<EngineVietCpp::MacroTable>();
+    (*macros)["vn"] = "Việt Nam";
+    engine.setMacros(macros);
+    engine.process_key_event('v', 0, 0);
+    engine.process_key_event('n', 0, 0);
+    KeyResult res = engine.process_key_event(KEYVAL_SPACE, 0, 0);
+    assert(res.handled);
+    assert(res.commit_text == "Việt Nam ");
+
+    // VNI: digits join the buffer and convert at commit.
+    EngineVietCpp vniEngine;
+    vniEngine.setOptions(vni_opts());
+    for (char c : std::string("vie65t")) {
+        vniEngine.process_key_event(static_cast<std::uint32_t>(c), 0, 0);
+    }
+    res = vniEngine.process_key_event(KEYVAL_SPACE, 0, 0);
+    assert(res.commit_text == "việt ");
+
+    // A leading digit is not buffered (stays literal in the app).
+    EngineVietCpp digitEngine;
+    digitEngine.setOptions(vni_opts());
+    res = digitEngine.process_key_event('1', 0, 0);
+    assert(!res.handled);
+    assert(digitEngine.buffer().empty());
 }
 
 static void test_all_vowel_tone_combinations() {
@@ -344,6 +480,10 @@ int main() {
     test_word_shapes_with_tones();
     test_any_position_modifiers();
     test_incremental_typing_detection();
+    test_spell_check_restore();
+    test_vni_mode();
+    test_modern_tone_style();
+    test_engine_macros_and_vni();
     std::cout << "All C++ tests passed.\n";
     return 0;
 }

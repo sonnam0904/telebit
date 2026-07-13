@@ -4,7 +4,11 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <string>
+#include <unordered_map>
+
+#include "vietnamese.h"
 
 // Key values consistent with the Python engine (X11/IBus style).
 constexpr std::uint32_t KEYVAL_SPACE = 0x20;
@@ -40,11 +44,21 @@ public:
     // Reset internal buffer (like do_reset).
     void reset();
 
-    // Current raw buffer (Telex sequence).
+    // Current raw buffer (Telex/VNI sequence).
     const std::string& buffer() const { return buffer_; }
+
+    // Conversion options (input method, spell check, tone style).
+    void setOptions(const TelexOptions& opts) { options_ = opts; }
+    const TelexOptions& options() const { return options_; }
+
+    // Abbreviation macros: lowercase abbreviation -> expansion, checked at commit.
+    using MacroTable = std::unordered_map<std::string, std::string>;
+    void setMacros(std::shared_ptr<const MacroTable> macros) { macros_ = std::move(macros); }
 
 private:
     std::string buffer_;
+    TelexOptions options_;
+    std::shared_ptr<const MacroTable> macros_;
 
     std::string convert_buffer_for_commit() const;
 };

@@ -105,6 +105,19 @@ void TelebitFcitx5Engine::normalizeForcePreeditApps() {
     *list = std::move(out);
 }
 
+void TelebitFcitx5Engine::rebuildMacroIndex() {
+    auto macros = std::make_shared<EngineVietCpp::MacroTable>();
+    for (const auto &rule : config_.macros.value()) {
+        const std::string abbrev = toLowerAscii(rule.abbrev.value());
+        const std::string &expansion = rule.expansion.value();
+        if (abbrev.empty() || expansion.empty()) {
+            continue;
+        }
+        (*macros)[abbrev] = expansion;
+    }
+    macrosLower_ = std::move(macros);
+}
+
 void TelebitFcitx5Engine::rebuildSeenProgramsIndex() {
     seenProgramsLower_.clear();
     forcePreeditEnabledLower_.clear();
@@ -181,6 +194,7 @@ void TelebitFcitx5Engine::reloadConfig() {
     readAsIni(config_, configFile);
     normalizeForcePreeditApps();
     rebuildSeenProgramsIndex();
+    rebuildMacroIndex();
     configDirty_ = false;
     resetAllInputStates();
 }
@@ -195,8 +209,27 @@ void TelebitFcitx5Engine::setConfig(const RawConfig &config) {
     normalizeForcePreeditApps();
     safeSaveAsIni(config_, configFile);
     rebuildSeenProgramsIndex();
+    rebuildMacroIndex();
     configDirty_ = false;
     resetAllInputStates();
+}
+
+TelexOptions TelebitFcitx5Engine::currentOptions() const {
+    TelexOptions opts;
+    opts.spellCheckRestore = config_.spellCheckRestore.value();
+    opts.vniMode = config_.vniMode.value();
+    opts.modernTone = config_.modernToneStyle.value();
+    return opts;
+}
+
+// Commit whatever is pending (used when Vietnamese typing gets toggled off).
+void TelebitFcitx5Engine::flushPending(InputContext *ic, TelebitInputState *state) {
+    if (!state->engine.buffer().empty()) {
+        ic->commitString(convert_buffer(state->engine.buffer(), currentOptions()));
+    }
+    state->resetAll();
+    ic->inputPanel().setClientPreedit(Text());
+    ic->updatePreedit();
 }
 
 void TelebitFcitx5Engine::updatePreedit(InputContext *ic, TelebitInputState *state) {
@@ -211,7 +244,7 @@ void TelebitFcitx5Engine::updatePreedit(InputContext *ic, TelebitInputState *sta
         return;
     }
 
-    std::string preeditStr = convert_buffer(buffer);
+    std::string preeditStr = convert_buffer(buffer, currentOptions());
     Text preedit;
     preedit.append(preeditStr, TextFormatFlag::Underline);
     // Place cursor at the end of the preedit text (by byte).
@@ -228,6 +261,26 @@ void TelebitFcitx5Engine::keyEvent(const InputMethodEntry &entry, KeyEvent &keyE
     if (!ic || !state) {
         return;
     }
+
+    if (!keyEvent.isRelease()) {
+        const Key &key = keyEvent.key();
+        // Temporarily toggle Vietnamese typing on/off (like Unikey's EN/VI switch).
+        if (key.checkKeyList(config_.toggleVietnameseKey.value())) {
+            if (vietnameseEnabled_) {
+                flushPending(ic, state);
+            }
+            vietnameseEnabled_ = !vietnameseEnabled_;
+            keyEvent.filterAndAccept();
+            return;
+        }
+    }
+
+    if (!vietnameseEnabled_) {
+        return;
+    }
+
+    state->engine.setOptions(currentOptions());
+    state->engine.setMacros(macrosLower_);
 
     bool useDirectRollback = config_.directCommitRollback.value();
 
@@ -307,11 +360,13 @@ void TelebitFcitx5Engine::keyEventDirectRollback(InputContext *ic,
 
     auto sym = key.sym();
 
+    const TelexOptions opts = currentOptions();
+
     // Backspace: update our internal buffers and rewrite the current word.
     if (sym == FcitxKey_BackSpace) {
         if (!state->rollbackRawAscii.empty()) {
             state->rollbackRawAscii.pop_back();
-            std::string newDisplay = telex_to_unicode(state->rollbackRawAscii);
+            std::string newDisplay = telex_to_unicode(state->rollbackRawAscii, opts);
 
             std::size_t prefixLen =
                 commonPrefixBytes(state->rollbackDisplay, newDisplay);
@@ -334,16 +389,31 @@ void TelebitFcitx5Engine::keyEventDirectRollback(InputContext *ic,
         return;
     }
 
+    // In VNI mode digits modify the current word (leading digits stay literal).
+    const bool vniDigit = opts.vniMode && '0' <= sym && sym <= '9' &&
+                          !state->rollbackRawAscii.empty();
+
     // Word boundary: space / enter / tab / punctuation / digits.
-    // Clear state and allow the key to reach the application.
-    if (!(('a' <= sym && sym <= 'z') || ('A' <= sym && sym <= 'Z'))) {
+    // Expand macros, clear state and allow the key to reach the application.
+    if (!(('a' <= sym && sym <= 'z') || ('A' <= sym && sym <= 'Z') || vniDigit)) {
+        if (!state->rollbackRawAscii.empty() && macrosLower_) {
+            auto it = macrosLower_->find(toLowerAscii(state->rollbackRawAscii));
+            if (it != macrosLower_->end()) {
+                int chars = utf8CharCount(state->rollbackDisplay);
+                if (chars > 0) {
+                    ic->deleteSurroundingText(-chars,
+                                              static_cast<unsigned int>(chars));
+                }
+                ic->commitString(it->second);
+            }
+        }
         state->clearRollback();
         return;
     }
 
     // Letter key: rewrite the word in-place.
     state->rollbackRawAscii.push_back(static_cast<char>(sym));
-    std::string newDisplay = telex_to_unicode(state->rollbackRawAscii);
+    std::string newDisplay = telex_to_unicode(state->rollbackRawAscii, opts);
 
     std::size_t prefixLen = commonPrefixBytes(state->rollbackDisplay, newDisplay);
     int charsToDelete = utf8CharCount(state->rollbackDisplay.substr(prefixLen));

@@ -11,7 +11,9 @@ std::string renderVowelNoTone(char v);
 std::string renderVowelWithTone(char v, int tone);
 
 // Renders a shaped rime to UTF-8, applying tone to the main vowel.
-std::string renderRimeUtf8(const std::string& shaped, int tone);
+// modernTone places the tone on the second vowel of oa/oe/uy (hoà/khoẻ/thuý)
+// instead of the classic style (hòa/khỏe/thúy).
+std::string renderRimeUtf8(const std::string& shaped, int tone, bool modernTone = false);
 
 // Uppercases ASCII and Vietnamese UTF-8 letters deterministically (no locale dependency).
 std::string utf8ToUpper(const std::string& s);

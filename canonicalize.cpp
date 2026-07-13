@@ -20,43 +20,57 @@ static bool isAsciiVowel(char c) {
     return std::string_view("aeiouy").find(static_cast<char>(std::tolower(static_cast<unsigned char>(c)))) != std::string_view::npos;
 }
 
-bool applyEscapeRules(const std::string& word, const std::string& lower, std::string& outRaw) {
-    // Special-case for non-contiguous triple vowels where the last two are adjacent.
-    // Example: "telee" (3 x 'e' in word, with "ee" at the cursor) should become "tele".
-    for (char v : std::string("aeo")) {
-        int count = 0;
-        for (char c : lower) {
-            if (c == v) ++count;
-        }
-        if (count >= 3) {
-            std::string pat(2, v);
-            std::size_t p = lower.find(pat);
-            if (p != std::string::npos) {
-                outRaw.clear();
-                outRaw.reserve(word.size() - 1);
-                outRaw.append(word.substr(0, p));
-                outRaw.push_back(word[p]); // collapse local double -> single
-                std::size_t after = p + 2;
-                if (after < word.size()) outRaw.append(word.substr(after));
-                return true;
-            }
-        }
-    }
+// Runs the plain Telex pipeline on a lowercase word and reports whether the result
+// is a valid Vietnamese syllable. Used to decide if a doubled tone key really was
+// a tone application (escape) rather than plain English letters.
+static bool telexWordConverts(const std::string& lowerWord) {
+    std::string body;
+    int tone = 0;
+    bool strip = false;
+    std::tie(body, tone, strip) = extractTone(lowerWord);
 
-    struct Esc { const char* pat; int patLen; int outLen; };
+    std::string onset, rimeRaw;
+    splitOnsetRime(body, onset, rimeRaw);
+    rimeRaw = canonicalizeRimeByTable(rimeRaw);
+    std::string shaped = applyShapesRime(rimeRaw);
+    return isValidSyllable(onset, shaped);
+}
+
+bool applyEscapeRules(const std::string& word, const std::string& lower, std::string& outRaw) {
+    struct Esc { const char* pat; int patLen; int outLen; bool toneKey; };
     const Esc escapes[] = {
-        {"ss", 2, 1}, {"ff", 2, 1}, {"rr", 2, 1}, {"xx", 2, 1}, {"jj", 2, 1}, {"ww", 2, 1},
-        {"aaa", 3, 2}, {"eee", 3, 2}, {"ooo", 3, 2},
+        {"ss", 2, 1, true}, {"ff", 2, 1, true}, {"rr", 2, 1, true},
+        {"xx", 2, 1, true}, {"jj", 2, 1, true}, {"ww", 2, 1, false},
+        {"aaa", 3, 2, false}, {"eee", 3, 2, false}, {"ooo", 3, 2, false},
         // Allow typing literal "dd" (avoid Telex dd->đ) by using "ddd" escape.
-        {"ddd", 3, 2},
+        {"ddd", 3, 2, false},
     };
     std::size_t escPos = std::string::npos;
     const Esc* esc = nullptr;
     for (const auto& e : escapes) {
-        std::size_t p = lower.find(e.pat);
-        if (p != std::string::npos && (escPos == std::string::npos || p < escPos)) {
-            escPos = p;
-            esc = &e;
+        std::size_t from = 0;
+        while (true) {
+            std::size_t p = lower.find(e.pat, from);
+            if (p == std::string::npos) break;
+            if (e.toneKey) {
+                // A doubled tone key is only an escape when the first key actually
+                // applied a tone: there must be a vowel before it and the prefix up to
+                // (and including) that key must form a valid syllable. Otherwise the
+                // letters are literal (English words like "address", "chess" prefixes).
+                bool vowelBefore = false;
+                for (std::size_t i = 0; i < p; ++i) {
+                    if (isAsciiVowel(lower[i])) { vowelBefore = true; break; }
+                }
+                if (!vowelBefore || !telexWordConverts(lower.substr(0, p + 1))) {
+                    from = p + 1;
+                    continue;
+                }
+            }
+            if (escPos == std::string::npos || p < escPos) {
+                escPos = p;
+                esc = &e;
+            }
+            break;
         }
     }
     if (escPos != std::string::npos && esc != nullptr) {
@@ -331,6 +345,157 @@ std::string canonicalizeRimeByTable(const std::string& rimeRaw) {
     }
 
     return rimeRaw;
+}
+
+bool isValidSyllable(const std::string& onset, const std::string& shapedRime) {
+    const auto& onsets = getOnsets();
+    bool onsetOk = false;
+    for (const auto& o : onsets) {
+        if (o == onset) { onsetOk = true; break; }
+    }
+    if (!onsetOk) return false;
+
+    std::string_view rime{shapedRime};
+    if (!rime.empty() && rime.front() == 'D') rime.remove_prefix(1);  // đ + rime
+    if (rime.empty()) return true;
+    if (kInternalVowels.find(rime.front()) == std::string_view::npos) return false;
+    for (char c : rime) {
+        // Literal 'w' placeholder or a mid-rime đ never occur in Vietnamese.
+        if (c == 'W' || c == 'D') return false;
+    }
+
+    const auto& table = getRimeMainVowelTable();
+    std::string key{rime};
+    if (table.find(key) != table.end()) return true;
+    // Accept prefixes of valid rimes so partially typed syllables keep converting
+    // (e.g. "tiê" while on the way to "tiên").
+    for (const auto& kv : table) {
+        const std::string& k = kv.first;
+        if (k.size() > key.size() && k.compare(0, key.size(), key) == 0) return true;
+    }
+    return false;
+}
+
+void splitOnsetRimeShaped(const std::string& body, std::string& onset, std::string& rime) {
+    onset.clear();
+    rime.clear();
+    if (body.empty()) return;
+
+    auto isVowelPh = [](char c) {
+        return kInternalVowels.find(c) != std::string_view::npos;
+    };
+
+    // 'D' (đ) has no onset; keep it in the rime so the renderer emits it.
+    if (body[0] == 'D') {
+        rime = body;
+        return;
+    }
+
+    for (const std::string& o : getOnsets()) {
+        if (o.empty()) {
+            if (isVowelPh(body[0])) {
+                rime = body;
+                return;
+            }
+            continue;
+        }
+        if (body.size() >= o.size() && body.compare(0, o.size(), o) == 0) {
+            std::string rest = body.substr(o.size());
+            if (rest.empty() || isVowelPh(rest[0])) {
+                onset = o;
+                rime = rest;
+                return;
+            }
+        }
+    }
+
+    if (!isVowelPh(body[0])) {
+        onset = body.substr(0, 1);
+        rime = body.substr(1);
+        return;
+    }
+    rime = body;
+}
+
+VniWord translateVniWord(const std::string& word, const std::string& lower) {
+    auto isDigit = [](char c) { return c >= '0' && c <= '9'; };
+    VniWord res;
+
+    // A doubled modifier digit escapes the IME: collapse each pair, output literally.
+    bool hasDoubledDigit = false;
+    for (std::size_t i = 0; i + 1 < lower.size(); ++i) {
+        if (isDigit(lower[i]) && lower[i + 1] == lower[i]) { hasDoubledDigit = true; break; }
+    }
+    if (hasDoubledDigit) {
+        res.kind = VniWord::Kind::LiteralEscape;
+        for (std::size_t i = 0; i < word.size();) {
+            if (isDigit(lower[i]) && i + 1 < word.size() && lower[i + 1] == lower[i]) {
+                res.body.push_back(word[i]);
+                i += 2;
+            } else {
+                res.body.push_back(word[i]);
+                ++i;
+            }
+        }
+        return res;
+    }
+
+    // A trailing digit run with two or more tone digits (0-5) is a literal number
+    // ("nam2024", "top10"), while a shape+tone combo like "viet65" still converts.
+    std::size_t trail = 0;
+    int trailingToneDigits = 0;
+    while (trail < lower.size() && isDigit(lower[lower.size() - 1 - trail])) {
+        char c = lower[lower.size() - 1 - trail];
+        if (c >= '0' && c <= '5') ++trailingToneDigits;
+        ++trail;
+    }
+    if (trailingToneDigits >= 2) {
+        res.kind = VniWord::Kind::Raw;
+        return res;
+    }
+
+    std::string body;
+    int tone = 0;
+    for (char c : lower) {
+        if (!isDigit(c)) {
+            body.push_back(c);
+            continue;
+        }
+        std::size_t pos = std::string::npos;
+        switch (c) {
+            case '1': tone = 1; break;
+            case '2': tone = 2; break;
+            case '3': tone = 3; break;
+            case '4': tone = 4; break;
+            case '5': tone = 5; break;
+            case '0': tone = 0; break;
+            case '6':  // hat: a->â, e->ê, o->ô
+                pos = body.find_last_of("aeo");
+                if (pos == std::string::npos) { res.kind = VniWord::Kind::Raw; return res; }
+                body[pos] = body[pos] == 'a' ? 'B' : body[pos] == 'e' ? 'E' : 'O';
+                break;
+            case '7':  // horn: u->ư, o->ơ
+                pos = body.find_last_of("uo");
+                if (pos == std::string::npos) { res.kind = VniWord::Kind::Raw; return res; }
+                body[pos] = body[pos] == 'u' ? 'U' : 'Q';
+                break;
+            case '8':  // breve: a->ă
+                pos = body.find_last_of('a');
+                if (pos == std::string::npos) { res.kind = VniWord::Kind::Raw; return res; }
+                body[pos] = 'A';
+                break;
+            case '9':  // d->đ
+                pos = body.find_last_of('d');
+                if (pos == std::string::npos) { res.kind = VniWord::Kind::Raw; return res; }
+                body[pos] = 'D';
+                break;
+        }
+    }
+
+    res.kind = VniWord::Kind::Converted;
+    res.body = std::move(body);
+    res.tone = tone;
+    return res;
 }
 
 }  // namespace telebit::internal
