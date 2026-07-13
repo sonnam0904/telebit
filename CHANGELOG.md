@@ -1,3 +1,10 @@
+## [2.3.1](https://github.com/sonnam0904/telebit/compare/v2.3.0...v2.3.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* prevent Jekyll processing of static assets in APT repository ([d99393a](https://github.com/sonnam0904/telebit/commit/d99393a9bd5e3ab0ab038019e22c8bc2ffb7324c))
+
 # [2.3.0](https://github.com/sonnam0904/telebit/compare/v2.2.0...v2.3.0) (2026-07-13)
 
 
