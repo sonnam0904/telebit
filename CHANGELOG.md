@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/sonnam0904/telebit/compare/v2.2.0...v2.3.0) (2026-07-13)
+
+
+### Features
+
+* enhance APT repository setup and publishing process ([3c13fb1](https://github.com/sonnam0904/telebit/commit/3c13fb1db51bf77055149bdd95749670ee3596a9))
+
 # [2.2.0](https://github.com/sonnam0904/telebit/compare/v2.1.0...v2.2.0) (2026-07-13)
 
 
