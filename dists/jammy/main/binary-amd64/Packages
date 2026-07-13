@@ -1,0 +1,32 @@
+Package: telebit
+Version: 2.3.2+jammy
+Architecture: all
+Maintainer: telebit-fcitx5 <https://github.com/sonnam0904/telebit>
+Depends: telebit-fcitx5
+Filename: pool/jammy/main/t/telebit_2.3.2+jammy_all.deb
+Size: 644
+MD5sum: c60247f9869e0662365cb434d17bfd63
+SHA1: f3ec23090fb94921a2c20c818767b6ffc184a198
+SHA256: 9048bca5308f877cae21142c679c52bda9ec06951fab68045210d86c97638603
+Section: utils
+Priority: optional
+Description: Vietnamese Telex/VNI input method for fcitx5 (metapackage)
+ Convenience metapackage so 'sudo apt install telebit' works. It ships no
+ files of its own; it only depends on telebit-fcitx5, the real addon package.
+
+Package: telebit-fcitx5
+Version: 2.3.2+jammy
+Architecture: amd64
+Maintainer: telebit-fcitx5 <https://github.com/sonnam0904/telebit>
+Installed-Size: 300
+Depends: fcitx5, libfcitx5core5 | libfcitx5core7 | libfcitx5core8 | libfcitx5core9 | libfcitx5core10
+Filename: pool/jammy/main/t/telebit-fcitx5_2.3.2+jammy_amd64.deb
+Size: 86240
+MD5sum: e010d138c6a3ff69a978c7e754abe615
+SHA1: 0b41525ee29e0f96c1042441ea5325338144b8c4
+SHA256: e69beefdf5bfb4f30165f3b52c43368703205377bbbe8bb1bd7ee5f496043d36
+Section: utils
+Priority: optional
+Description: Vietnamese Telex input method for fcitx5
+ Vietnamese Telex (UTF-8) engine and fcitx5 addon (Telebit). After install, add Telebit in fcitx5-configtool and restart fcitx5.
+

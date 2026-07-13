@@ -1,0 +1,24 @@
+Architectures: amd64
+Codename: noble
+Components: main
+Date: Mon, 13 Jul 2026 06:56:24 +0000
+Description: Telebit Vietnamese Telex/VNI input method (fcitx5) APT repository
+Label: Telebit
+Origin: Telebit
+Suite: noble
+MD5Sum:
+ ba328fbb98efec76cc520f611e170684              215 Release
+ fc28d1347cc336135a48ed4b0b058a28             1342 main/binary-amd64/Packages
+ 89bee3b64581c6a9976dd9860da377e4              680 main/binary-amd64/Packages.gz
+SHA1:
+ 0eca074db109921d0c6de1505ac345dc3bfc1474              215 Release
+ 1a5070406aea6d2d4e73474618fb755baa85d654             1342 main/binary-amd64/Packages
+ e9a6e2f4248b0121fce44b2f9695fbcefb7066b8              680 main/binary-amd64/Packages.gz
+SHA256:
+ 717490e3c64ed9c751752bd0cac749abdec693661541fd4dc2f0018cf1f159c9              215 Release
+ 5cf0897bc50fadef40642b4a1b99ad64985be922f2062513cc6b95b5e2781e29             1342 main/binary-amd64/Packages
+ 58dccd4564faa1d1ab9355169bb8a5ec5f7da02f8ab3f0b3607b94eff9557d37              680 main/binary-amd64/Packages.gz
+SHA512:
+ 6ce73ad8f650e0908b1bc13d44dd5f006002617057c825ccb38152cf668f9818f274e87721a1ad1e0627146248fec0c98ce0f466b98c0c78470a7da80cbbe1c1              215 Release
+ 86563a6bc9851afbcc40e24c16bcd47bcdd3fedd188f0f8548d8b770fe9d5ff2344938aff68f1ab086574e772d855dfffb4b83550f8608d9851deb0ae8387366             1342 main/binary-amd64/Packages
+ 2773d2fd7e3b399b7494d1cbfd948ade4f2fdb5aab26e7fe979629a7ff1ef7110cb9de4de316044c4cc670853e4dfca8a3d755b690b3296a002613acacae3d73              680 main/binary-amd64/Packages.gz
