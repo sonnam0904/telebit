@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/sonnam0904/telebit/compare/v2.1.0...v2.2.0) (2026-07-13)
+
+
+### Features
+
+* enhance Vietnamese input handling with VNI support and modern tone style ([7f174f4](https://github.com/sonnam0904/telebit/commit/7f174f46cbdb7f9a514b2e4c5cfd1ccaa35a2063))
+
 # [2.1.0](https://github.com/sonnam0904/telebit/compare/v2.0.3...v2.1.0) (2026-06-01)
 
 
