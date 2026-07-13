@@ -56,6 +56,10 @@ gpg --batch --yes --pinentry-mode loopback \
 
 gpg --batch --yes --armor --export "${GPG_KEY_ID}" > "${REPO_DIR}/pubkey.gpg"
 
+# Serve raw files as-is (GitHub Pages runs Jekyll by default, which can mangle
+# non-HTML/Markdown static assets like Packages/Release).
+touch "${REPO_DIR}/.nojekyll"
+
 if [[ ! -f "${REPO_DIR}/index.html" ]]; then
   cat > "${REPO_DIR}/index.html" <<'HTML'
 <!doctype html>
