@@ -12,7 +12,8 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "bash scripts/build-release-debs.sh ${nextRelease.version} && bash scripts/build-release-rpm.sh ${nextRelease.version}"
+        "prepareCmd": "bash scripts/build-release-debs.sh ${nextRelease.version} && bash scripts/build-release-rpm.sh ${nextRelease.version}",
+        "publishCmd": "echo ${nextRelease.version} > release-debs/.released-version"
       }
     ],
     [

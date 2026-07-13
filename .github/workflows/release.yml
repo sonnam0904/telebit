@@ -5,8 +5,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-  release:
-    types: [published]
 
 permissions:
   contents: write
@@ -16,7 +14,6 @@ permissions:
 jobs:
   # Two runners: jammy = older libstdc++ (22.04 users); noble = 24.04+ toolchains.
   package-deb:
-    if: github.event_name != 'release'
     strategy:
       fail-fast: false
       matrix:
@@ -46,7 +43,6 @@ jobs:
           path: telebit-fcitx5/build-deb/*.deb
 
   package-rpm:
-    if: github.event_name != 'release'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +68,6 @@ jobs:
           path: telebit-fcitx5/build-rpm/*.rpm
 
   release:
-    if: github.event_name != 'release'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -94,30 +89,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Triggered once semantic-release publishes the GitHub Release above (event
-  # "release: published"). Runs as its own job so it can be re-run from the
-  # Actions tab without re-doing the whole build+release pipeline.
-  publish-apt:
-    if: github.event_name == 'release'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Resolve version from the release tag
-        id: ver
+      # semantic-release's exec plugin writes release-debs/.released-version
+      # from its publishCmd hook, which only fires when a release actually
+      # happens. Everything below is gated on that file existing.
+      #
+      # NOTE: this intentionally runs as extra steps in *this* job instead of
+      # a job triggered by the "release: published" event — GitHub Actions
+      # does not fire new workflow runs for events created by the default
+      # GITHUB_TOKEN (anti-recursion protection), so that event never arrives.
+      - name: Check whether a new release was published
+        id: check
         run: |
-          TAG="${{ github.event.release.tag_name }}"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Download release .deb assets
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p release-debs
-          gh release download "${{ github.event.release.tag_name }}" \
-            --repo "${{ github.repository }}" --pattern '*.deb' --dir release-debs
+          if [[ -f release-debs/.released-version ]]; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "version=$(cat release-debs/.released-version)" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build the telebit metapackage (one per codename suffix)
+        if: steps.check.outputs.released == 'true'
         run: |
           set -euo pipefail
           for f in release-debs/telebit-fcitx5_*_amd64.deb; do
@@ -126,6 +117,7 @@ jobs:
           done
 
       - name: Import APT signing key
+        if: steps.check.outputs.released == 'true'
         id: gpg
         run: |
           echo "${{ secrets.APT_GPG_PRIVATE_KEY }}" | gpg --batch --import
@@ -133,12 +125,14 @@ jobs:
           echo "keyid=${keyid}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout gh-pages (the published APT repo)
+        if: steps.check.outputs.released == 'true'
         uses: actions/checkout@v4
         with:
           ref: gh-pages
           path: apt-repo
 
       - name: Publish jammy + noble suites
+        if: steps.check.outputs.released == 'true'
         run: |
           set -euo pipefail
           for suite in jammy noble; do
@@ -154,6 +148,7 @@ jobs:
           done
 
       - name: Commit and push the APT repo
+        if: steps.check.outputs.released == 'true'
         working-directory: apt-repo
         run: |
           git config user.name "github-actions[bot]"
@@ -162,6 +157,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No repo changes"
           else
-            git commit -m "chore(apt): publish ${{ steps.ver.outputs.version }}"
+            git commit -m "chore(apt): publish ${{ steps.check.outputs.version }}"
             git push origin gh-pages
           fi
