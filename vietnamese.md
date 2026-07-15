@@ -134,6 +134,8 @@ Ghi chú: trong thực tế, khi phân tích âm đầu, thường dùng nguyên
 - **uê – uơ**
 - **ua – uô**
 - **uy – uya**
+- **iu – ưu** (`cứu`, `lưu`, `mưu`, `hưu`)
+- **ươu** (`rượu`, `hươu`, `bươu`, `khướu`)
 
 ## Nhóm vần mở rộng
 
@@ -144,6 +146,14 @@ Ghi chú: trong thực tế, khi phân tích âm đầu, thường dùng nguyên
 - **oang – oac**
 - **uyên – uyết**
 - **uyn – uyt**
+
+## Nhóm vần ba nguyên âm (mở, không âm cuối)
+
+Các vần gồm ba nguyên âm và không có âm cuối. Dấu thanh đặt trên **nguyên âm giữa** (xem quy tắc bên dưới).
+
+- **oeo** – dấu trên `e` (`ngoèo`, `ngoẻo`)
+- **uyu** – dấu trên `y` (`khuỷu`)
+- **uây** – dấu trên `â` (`khuây`, `khuẩy`)
 
 ## Quy tắc đặt dấu (thanh) trong vần
 
@@ -156,4 +166,9 @@ Ví dụ (minh hoạ thường gặp):
 
 - **ngoại**: vần `oai`, dấu nặng đặt trên **a** → `ngoại`
 - **xoáy**: vần `oay`, dấu sắc đặt trên **a** → `xoáy`
+- **cứu**: vần `ưu`, dấu sắc đặt trên **ư** → `cứu`
+- **rượu**: vần `ươu`, dấu nặng đặt trên **ơ** → `rượu`
+- **khuỷu**: vần `uyu`, dấu hỏi đặt trên **y** → `khuỷu`
+- **ngoèo**: vần `oeo`, dấu huyền đặt trên **e** → `ngoèo`
+- **khuẩy**: vần `uây`, dấu hỏi đặt trên **â** → `khuẩy`
 
