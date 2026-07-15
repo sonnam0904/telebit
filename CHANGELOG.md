@@ -1,3 +1,10 @@
+## [2.3.3](https://github.com/sonnam0904/telebit/compare/v2.3.2...v2.3.3) (2026-07-15)
+
+
+### Bug Fixes
+
+* add missing open-glide rimes (ưu, ươu, uyu, oeo, uây) to spell-check table ([db77e4d](https://github.com/sonnam0904/telebit/commit/db77e4d47da006dd5b47efe28b9a5db1635291c8))
+
 ## [2.3.2](https://github.com/sonnam0904/telebit/compare/v2.3.1...v2.3.2) (2026-07-13)
 
 
