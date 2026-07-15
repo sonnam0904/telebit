@@ -126,6 +126,28 @@ static void test_triple_vowels_english() {
     assert(telex_to_unicode("telee") == "telee");
 }
 
+static void test_open_glide_rimes() {
+    // Open rimes that the spell-check gate must recognize as valid Vietnamese.
+    // ưu (Uu) — tone on ư.
+    assert(telex_to_unicode("uwu") == "ưu");
+    assert(telex_to_unicode("cuwus") == "cứu");
+    assert(telex_to_unicode("luwu") == "lưu");
+    assert(telex_to_unicode("muwu") == "mưu");
+    assert(telex_to_unicode("huwu") == "hưu");
+    // ươu (UQu) — tone on ơ.
+    assert(telex_to_unicode("ruowuj") == "rượu");
+    assert(telex_to_unicode("huowu") == "hươu");
+    assert(telex_to_unicode("khuowus") == "khướu");
+    // uyu — tone on y (khuỷu).
+    assert(telex_to_unicode("khuyur") == "khuỷu");
+    // oeo — tone on e (ngoèo).
+    assert(telex_to_unicode("ngoeof") == "ngoèo");
+    assert(telex_to_unicode("ngoeor") == "ngoẻo");
+    // uây (uBy) — tone on â (khuây).
+    assert(telex_to_unicode("khuaay") == "khuây");
+    assert(telex_to_unicode("khuaayj") == "khuậy");
+}
+
 static void test_spell_check_restore() {
     // English words whose letters look like Telex modifiers must survive intact:
     // tone keys (s/f/r/x/j) may not delete real characters...
@@ -480,6 +502,7 @@ int main() {
     test_word_shapes_with_tones();
     test_any_position_modifiers();
     test_incremental_typing_detection();
+    test_open_glide_rimes();
     test_spell_check_restore();
     test_vni_mode();
     test_modern_tone_style();

@@ -29,6 +29,13 @@ const std::unordered_map<std::string, int>& getRimeMainVowelTable() {
         add("u", 0); add("ua", 0); add("ui", 0); add("uy", 0);
         add("U", 0);
         add("y", 0);
+        // Open glide rimes without a coda that also need explicit entries so the
+        // spell-check gate accepts them (tone on the vowel noted in each comment).
+        add("Uu", 0);   // ưu: cứu, lưu, mưu, hưu (tone on ư)
+        add("UQu", 1);  // ươu: rượu, hươu, khướu (tone on ơ)
+        add("uyu", 1);  // uyu: khuỷu (tone on y)
+        add("oeo", 1);  // oeo: ngoèo, ngoẻo (tone on e)
+        add("uBy", 1);  // uây: khuây, khuẩy (tone on â)
 
         // âu, ây
         add("Bu", 0); add("By", 0);
