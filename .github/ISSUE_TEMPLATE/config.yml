@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Câu hỏi & Thảo luận
+    url: https://github.com/sonnam0904/telebit/discussions
+    about: Đặt câu hỏi hoặc thảo luận chung về Telebit tại đây.
+  - name: Báo cáo lỗ hổng bảo mật
+    url: https://github.com/sonnam0904/telebit/security/advisories/new
+    about: Vui lòng báo cáo vấn đề bảo mật riêng tư, không mở issue công khai.
