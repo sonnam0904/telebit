@@ -275,12 +275,15 @@ Và sau đó thiết lập thêm input method **Telebit** (tìm `telebit-fcitx5`
 Ở thư mục gốc của repository:
 
 ```bash
+# Cài toàn hệ thống (PREFIX = /usr, cần sudo) — mặc định nếu không truyền cờ
+./install.sh
+./install.sh --system
+
 # Cài cho user hiện tại (PREFIX = $HOME/.local)
 ./install.sh --user
-
-# Cài toàn hệ thống (PREFIX = /usr, cần sudo)
-./install.sh --system
 ```
+
+> Lưu ý: fcitx5 chỉ tìm thư viện addon (`.so`) trong thư mục lib addon đã compile sẵn của chính nó (thường là `/usr/lib/<arch>/fcitx5` với bản cài qua `apt`) — **không** tự động dò thêm `$HOME/.local/lib/fcitx5`. Nếu fcitx5 của bạn cài qua APT/`.deb`/`.rpm` (phổ biến nhất), dùng `--system` (mặc định) để addon được nhận diện ngay; chỉ dùng `--user` khi bạn tự build và chạy fcitx5 từ `$HOME/.local`.
 
 Script sẽ thực hiện:
 
@@ -367,6 +370,7 @@ Addon `telebit-fcitx5` hỗ trợ **2 chế độ chính**:
 | **SpellCheckRestore** | Bật | Kiểm tra chính tả: nếu từ vừa gõ không phải âm tiết tiếng Việt hợp lệ thì tự khôi phục về phím gốc (giúp gõ xen tiếng Anh: `person`, `address`, `cheese`… không bị biến dạng). |
 | **VNIMode** | Tắt | Chuyển sang kiểu gõ **VNI**: `1-5` = sắc/huyền/hỏi/ngã/nặng, `0` = xoá thanh, `6` = mũ (â/ê/ô), `7` = móc (ư/ơ), `8` = ă, `9` = đ. Ví dụ: `vie65t` → `việt`, `d9i` → `đi`. Gõ đúp số để ra số literal (`a11` → `a1`); đuôi số như `nam2024` được giữ nguyên. |
 | **ModernToneStyle** | Tắt | Đặt dấu kiểu mới cho vần `oa/oe/uy`: `hoá, khoẻ, thuý` (mặc định là kiểu cũ: `hóa, khỏe, thúy`). |
+| **AutoCapitalizeSentence** | Bật | Tự động viết hoa chữ cái đầu tiên của câu tiếp theo sau khi gõ `.`, `?`, `!` rồi nhấn dấu cách hoặc Enter. |
 | **ToggleVietnameseKey** | `Ctrl+Shift+Z` | Tạm bật/tắt gõ tiếng Việt (hữu ích khi cần gõ một đoạn tiếng Anh dài). |
 | **Macros** | (trống) | Gõ tắt: khai báo cặp *viết tắt → nội dung* (vd: `vn` → `Việt Nam`). Khi kết thúc từ (Space/Enter/dấu câu), từ viết tắt được thay bằng nội dung. |
 

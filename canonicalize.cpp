@@ -255,9 +255,31 @@ std::string applyShapesRime(std::string s) {
     return out;
 }
 
-std::string canonicalizeRimeByTable(const std::string& rimeRaw) {
-    if (rimeRaw.empty()) return rimeRaw;
-
+// Giải thuật: tìm kiếm tổ hợp có cắt tỉa sớm (BFS tối đa 2 tầng) để sắp xếp
+// lại thứ tự ký tự trong vần thô khi nó không khớp bảng ngay — trường hợp
+// người dùng gõ tự do vị trí dấu (Telex cho phép gõ dấu mũ/móc muộn hơn vị
+// trí "chuẩn"), ví dụ "toasn" cần thử lại vị trí trước khi khớp được "toán".
+//
+//   1. Thử khớp thẳng rimeRaw qua matches() — nếu khớp, trả về ngay (đã đúng
+//      thứ tự, không cần tìm kiếm gì thêm).
+//   2. Xác định biên của cụm nguyên âm (firstV..lastV) trong chuỗi — chỉ tìm
+//      kiếm bên trong cụm này, không đụng tới phần coda phía sau.
+//   3. Lặp tối đa 2 tầng (depth 0, 1); ở mỗi tầng, với mỗi chuỗi ứng viên
+//      hiện có, sinh ứng viên mới bằng 2 phép biến đổi:
+//        a. Gom các nguyên âm a/e/o bị lặp về liền kề nhau (mô phỏng dấu mũ
+//           gõ rời, ví dụ â/ê/ô bị tách do gõ thanh điệu chen giữa).
+//        b. Di chuyển ký tự 'w' (đại diện cho móc ư/ơ/ă — Telex cho gõ tự do
+//           vị trí) tới ngay sau từng nguyên âm a/o/u trong cụm.
+//      Mỗi ứng viên sinh ra được kiểm tra khớp bảng NGAY (early return) —
+//      nếu khớp, trả về luôn, không sinh thêm ứng viên khác.
+//   4. Hết 2 tầng mà vẫn không khớp: trả về nguyên bản rimeRaw (không thể
+//      chuẩn hoá — pipeline phía sau sẽ tự xử lý phần còn lại, kể cả từ chối
+//      qua spell-check nếu cần).
+//
+// Độ phức tạp: bị chặn chặt bởi độ dài cụm nguyên âm tiếng Việt (~4-5 ký tự)
+// và độ sâu cố định 2 tầng, nên số ứng viên sinh ra chỉ vài chục trong
+// trường hợp xấu nhất
+static std::string canonicalizeRimeByTableUncached(const std::string& rimeRaw) {
     auto firstVowelIdx = [](const std::string& shaped) -> int {
         for (int i = 0; i < static_cast<int>(shaped.size()); ++i) {
             if (kInternalVowels.find(shaped[static_cast<std::size_t>(i)]) != std::string_view::npos) return i;
@@ -347,6 +369,56 @@ std::string canonicalizeRimeByTable(const std::string& rimeRaw) {
     return rimeRaw;
 }
 
+// Giải thuật: wrapper cache bọc ngoài canonicalizeRimeByTableUncached() ở trên.
+//
+//   1. rimeRaw rỗng -> trả rỗng ngay, không đụng tới cache.
+//   2. Tra cache (unordered_map<rimeRaw, kết quả>) — nếu đã có (cache hit),
+//      trả kết quả đã lưu ngay, bỏ qua hoàn toàn bước tìm kiếm tổ hợp tốn kém.
+//   3. Cache miss: gọi canonicalizeRimeByTableUncached() để tính kết quả thật.
+//   4. Trước khi lưu, nếu cache đã đầy tới ngưỡng kMaxCacheEntries thì xoá
+//      sạch (clear) rồi mới lưu — chiến lược giới hạn đơn giản (không phải
+//      LRU), chấp nhận "quên" cache cũ để đổi lấy chi phí cài đặt tối thiểu
+//      và tránh phình bộ nhớ vô hạn khi gặp input không lặp lại (ví dụ gõ
+//      liên tục rất nhiều từ khác nhau, kể cả không phải tiếng Việt).
+//
+// Vì cùng một vần Telex (âm tiết) lặp lại rất thường xuyên trong văn bản
+// tiếng Việt thực tế (là, và, của, không...), phần lớn các lần gọi sau lần
+// đầu tiên chỉ còn là 1 lần tra hash, bỏ qua hẳn vòng lặp tổ hợp bên trên.
+std::string canonicalizeRimeByTable(const std::string& rimeRaw) {
+    if (rimeRaw.empty()) return rimeRaw;
+
+    static std::unordered_map<std::string, std::string> cache;
+    constexpr std::size_t kMaxCacheEntries = 2048;
+
+    auto cached = cache.find(rimeRaw);
+    if (cached != cache.end()) return cached->second;
+
+    std::string result = canonicalizeRimeByTableUncached(rimeRaw);
+
+    if (cache.size() >= kMaxCacheEntries) cache.clear();
+    cache.emplace(rimeRaw, result);
+    return result;
+}
+
+// Giải thuật: cổng kiểm tra chính tả (spell-check gate) mà spellCheckRestore
+// dùng để quyết định một âm tiết vừa convert có hợp lệ hay không — kể cả khi
+// vần đang gõ dở (mới gõ một phần).
+//
+//   1. onset phải nằm trong danh sách âm đầu hợp lệ (getOnsets()) — false
+//      ngay nếu không (ví dụ onset không tồn tại trong tiếng Việt).
+//   2. Bóc tiền tố 'D' (đ) ở đầu rime nếu có.
+//   3. Rime rỗng sau khi bóc -> hợp lệ (âm tiết chỉ có âm đầu, không vần).
+//   4. Ký tự đầu của rime phải là nguyên âm nội bộ hợp lệ; rime không được
+//      chứa 'W'/'D' ở giữa (2 placeholder này chỉ có nghĩa ở đầu, không bao
+//      giờ xuất hiện thật trong một âm tiết tiếng Việt).
+//   5. Tra thẳng rime trong getRimeMainVowelTable() — khớp chính xác nghĩa
+//      là vần đã hoàn chỉnh và hợp lệ — O(1).
+//   6. Không khớp thẳng (vần đang gõ dở, ví dụ "iê" trên đường tới "iên"):
+//      tra trong getRimeMainVowelPrefixSet() — tập hợp mọi tiền tố của mọi
+//      vần hợp lệ, đã build sẵn một lần lúc khởi tạo — một lần tra hash O(1)
+//      để biết rime hiện tại có phải tiền tố của một vần hợp lệ nào đó hay
+//      không. Trước khi tối ưu, bước này phải duyệt tuần tự qua cả 151 mục
+//      của bảng để tự so khớp từng tiền tố — O(n) trên mỗi lần gọi.
 bool isValidSyllable(const std::string& onset, const std::string& shapedRime) {
     const auto& onsets = getOnsets();
     bool onsetOk = false;
@@ -368,12 +440,9 @@ bool isValidSyllable(const std::string& onset, const std::string& shapedRime) {
     std::string key{rime};
     if (table.find(key) != table.end()) return true;
     // Accept prefixes of valid rimes so partially typed syllables keep converting
-    // (e.g. "tiê" while on the way to "tiên").
-    for (const auto& kv : table) {
-        const std::string& k = kv.first;
-        if (k.size() > key.size() && k.compare(0, key.size(), key) == 0) return true;
-    }
-    return false;
+    // (e.g. "tiê" while on the way to "tiên"). Precomputed once, so this is an
+    // O(1) hash lookup instead of scanning every table entry.
+    return getRimeMainVowelPrefixSet().count(key) != 0;
 }
 
 void splitOnsetRimeShaped(const std::string& body, std::string& onset, std::string& rime) {

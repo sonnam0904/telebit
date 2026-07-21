@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.21)
 project(telebit_fcitx5 VERSION 0.1.0)
 
+# Same rationale as the root CMakeLists.txt: don't ship an unoptimized addon
+# just because the caller didn't pass -DCMAKE_BUILD_TYPE=Release.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+endif()
+
 find_package(Fcitx5Core REQUIRED)
 
 include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")

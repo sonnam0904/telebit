@@ -56,6 +56,19 @@ std::string toLowerAscii(std::string s) {
     return s;
 }
 
+// Auto-capitalize: a sentence-ending mark that should trigger capitalizing
+// the next sentence once the user presses Enter.
+bool isSentenceEndChar(char c) {
+    return c == '.' || c == '?' || c == '!';
+}
+
+std::uint32_t uppercaseAscii(std::uint32_t sym) {
+    if (sym >= 'a' && sym <= 'z') {
+        return sym - ('a' - 'A');
+    }
+    return sym;
+}
+
 } // namespace
 
 // Ghi nhan ứng dụng mới vào file config
@@ -321,18 +334,43 @@ void TelebitFcitx5Engine::keyEventPreedit(InputContext *ic, TelebitInputState *s
     std::uint32_t keyval = static_cast<std::uint32_t>(key.sym());
     std::uint32_t keycode = static_cast<std::uint32_t>(key.code());
 
+    const bool autoCapitalize = config_.autoCapitalizeSentence.value();
+    if (autoCapitalize && state->capitalizeNextLetter &&
+        state->engine.buffer().empty()) {
+        if (keyval >= 'a' && keyval <= 'z') {
+            keyval = uppercaseAscii(keyval);
+        }
+        if ((keyval >= 'a' && keyval <= 'z') || (keyval >= 'A' && keyval <= 'Z')) {
+            state->capitalizeNextLetter = false;
+        }
+    }
+
     KeyResult result = state->engine.process_key_event(keyval, keycode, modState);
 
     if (result.handled) {
         keyEvent.filterAndAccept();
         if (!result.commit_text.empty()) {
             ic->commitString(result.commit_text);
+            state->lastDispatchedChar = result.commit_text.back();
         }
         updatePreedit(ic, state);
     } else {
         if (!result.commit_text.empty()) {
             ic->commitString(result.commit_text);
+            state->lastDispatchedChar = result.commit_text.back();
             updatePreedit(ic, state);
+        }
+        // modState is Ctrl/Alt only here (see above); a plain key that
+        // wasn't handled by the engine is about to be forwarded verbatim.
+        if (autoCapitalize && modState == 0) {
+            const bool isSentenceBoundaryKey =
+                (keyval == KEYVAL_RETURN || keyval == KEYVAL_SPACE);
+            if (isSentenceBoundaryKey && isSentenceEndChar(state->lastDispatchedChar)) {
+                state->capitalizeNextLetter = true;
+            }
+            if (keyval >= 0x20 && keyval <= 0x7e) {
+                state->lastDispatchedChar = static_cast<char>(keyval);
+            }
         }
     }
 }
@@ -359,6 +397,7 @@ void TelebitFcitx5Engine::keyEventDirectRollback(InputContext *ic,
     }
 
     auto sym = key.sym();
+    const bool autoCapitalize = config_.autoCapitalizeSentence.value();
 
     const TelexOptions opts = currentOptions();
 
@@ -405,13 +444,41 @@ void TelebitFcitx5Engine::keyEventDirectRollback(InputContext *ic,
                                               static_cast<unsigned int>(chars));
                 }
                 ic->commitString(it->second);
+                if (autoCapitalize && !it->second.empty()) {
+                    state->lastDispatchedChar = it->second.back();
+                }
             }
         }
         state->clearRollback();
+
+        // sym is still forwarded to the application unchanged after this
+        // (we never call filterAndAccept in this branch), even when a
+        // macro just committed its expansion — so sym always becomes the
+        // real last-dispatched character for the next auto-capitalize check.
+        if (autoCapitalize) {
+            const bool isSentenceBoundaryKey =
+                (sym == FcitxKey_Return || sym == FcitxKey_space);
+            if (isSentenceBoundaryKey && isSentenceEndChar(state->lastDispatchedChar)) {
+                state->capitalizeNextLetter = true;
+            }
+            if (sym >= 0x20 && sym <= 0x7e) {
+                state->lastDispatchedChar = static_cast<char>(sym);
+            }
+        }
         return;
     }
 
     // Letter key: rewrite the word in-place.
+    if (autoCapitalize && state->capitalizeNextLetter &&
+        state->rollbackRawAscii.empty()) {
+        if (sym >= 'a' && sym <= 'z') {
+            sym = static_cast<fcitx::KeySym>(uppercaseAscii(static_cast<std::uint32_t>(sym)));
+        }
+        if ((sym >= 'a' && sym <= 'z') || (sym >= 'A' && sym <= 'Z')) {
+            state->capitalizeNextLetter = false;
+        }
+    }
+
     state->rollbackRawAscii.push_back(static_cast<char>(sym));
     std::string newDisplay = telex_to_unicode(state->rollbackRawAscii, opts);
 
@@ -425,6 +492,9 @@ void TelebitFcitx5Engine::keyEventDirectRollback(InputContext *ic,
         ic->commitString(newDisplay.substr(prefixLen));
     }
     state->rollbackDisplay = newDisplay;
+    if (!newDisplay.empty()) {
+        state->lastDispatchedChar = newDisplay.back();
+    }
 
     // We commit ourselves, so do not forward the original key.
     keyEvent.filterAndAccept();

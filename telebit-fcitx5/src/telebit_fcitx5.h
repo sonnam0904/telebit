@@ -62,6 +62,11 @@ struct TelebitInputState : public fcitx::InputContextProperty {
     std::string rollbackRawAscii;
     std::string rollbackDisplay;
 
+    // Auto-capitalize: last plain-ASCII character actually sent to the
+    // application, and whether the next word typed should start uppercase.
+    char lastDispatchedChar = '\0';
+    bool capitalizeNextLetter = false;
+
     void clearRollback() {
         rollbackRawAscii.clear();
         rollbackDisplay.clear();
@@ -70,6 +75,8 @@ struct TelebitInputState : public fcitx::InputContextProperty {
     void resetAll() {
         engine.reset();
         clearRollback();
+        lastDispatchedChar = '\0';
+        capitalizeNextLetter = false;
     }
 };
 
@@ -117,6 +124,13 @@ private:
             "ModernToneStyle",
             "Đặt dấu kiểu mới (hoà, khoẻ, thuý) thay vì kiểu cũ (hòa, khỏe, thúy)",
             false
+        };
+
+        fcitx::Option<bool> autoCapitalizeSentence{
+            this,
+            "AutoCapitalizeSentence",
+            "Tự động viết hoa chữ đầu câu sau dấu . ? ! rồi dấu cách hoặc Enter",
+            true
         };
 
         fcitx::KeyListOption toggleVietnameseKey{

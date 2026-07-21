@@ -103,5 +103,26 @@ const std::unordered_map<std::string, int>& getRimeMainVowelTable() {
     return kTable;
 }
 
+// Giải thuật: build một lần duy nhất (static local -> Meyers singleton, chỉ
+// chạy ở lần gọi đầu tiên) tập hợp mọi TIỀN TỐ của mọi khoá trong
+// getRimeMainVowelTable(). Với mỗi khoá độ dài L, sinh ra các tiền tố độ dài
+// 1..L-1 rồi đưa vào một unordered_set.
+// Mục đích: cho isValidSyllable() một cách tra "chuỗi X có phải tiền tố của
+// một vần hợp lệ nào đó không" bằng 1 lần tra hash set — O(1) — thay vì phải
+// duyệt tuần tự qua cả bảng (151 mục) mỗi lần gọi như trước khi tối ưu.
+const std::unordered_set<std::string>& getRimeMainVowelPrefixSet() {
+    static const std::unordered_set<std::string> kPrefixes = []() {
+        std::unordered_set<std::string> prefixes;
+        for (const auto& kv : getRimeMainVowelTable()) {
+            const std::string& key = kv.first;
+            for (std::size_t len = 1; len < key.size(); ++len) {
+                prefixes.insert(key.substr(0, len));
+            }
+        }
+        return prefixes;
+    }();
+    return kPrefixes;
+}
+
 }  // namespace telebit::internal
 

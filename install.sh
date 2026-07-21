@@ -2,15 +2,15 @@
 
 set -euo pipefail
 
-MODE="user"
+MODE="system"
 if [[ "${1:-}" == "--system" ]]; then
   MODE="system"
 elif [[ "${1:-}" == "--user" ]]; then
   MODE="user"
 elif [[ "${1:-}" != "" ]]; then
   echo "Usage: $0 [--user|--system]"
-  echo "  --user   Install Telebit (fcitx5) into \$HOME/.local (default)"
-  echo "  --system Install Telebit (fcitx5) into /usr (requires sudo)"
+  echo "  --system Install Telebit (fcitx5) into /usr (requires sudo) (default)"
+  echo "  --user   Install Telebit (fcitx5) into \$HOME/.local"
   exit 1
 fi
 
