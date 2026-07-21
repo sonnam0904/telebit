@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/sonnam0904/telebit/compare/v2.3.3...v2.4.0) (2026-07-21)
+
+
+### Features
+
+* implement caching and auto-capitalization for Vietnamese syllable input ([56a1d6c](https://github.com/sonnam0904/telebit/commit/56a1d6cb8022b1bf57621b4cc9fb783fe4c384ae))
+
 ## [2.3.3](https://github.com/sonnam0904/telebit/compare/v2.3.2...v2.3.3) (2026-07-15)
 
 
