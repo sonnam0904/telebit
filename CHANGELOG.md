@@ -1,3 +1,15 @@
+# [2.5.0](https://github.com/sonnam0904/telebit/compare/v2.4.0...v2.5.0) (2026-07-22)
+
+
+### Bug Fixes
+
+* update installation scripts and README to include libcurl dependencies for .deb and RPM builds ([3ddf9d9](https://github.com/sonnam0904/telebit/commit/3ddf9d96df18dc802a19514cc74a2451a2e3ae63))
+
+
+### Features
+
+* Enhanced the Telebit fcitx5 addon to support AI features, including clipboard context and skill-based prompts. ([a89f848](https://github.com/sonnam0904/telebit/commit/a89f848c629f1b90b280f2eb967a5ceaa3bb86a5))
+
 # [2.4.0](https://github.com/sonnam0904/telebit/compare/v2.3.3...v2.4.0) (2026-07-21)
 
 
