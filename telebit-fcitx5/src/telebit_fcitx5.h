@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -10,7 +12,10 @@
 #include <fcitx/inputcontextproperty.h>
 #include <fcitx/inputmethodengine.h>
 #include <fcitx/instance.h>
+#include <fcitx-utils/event.h>
+#include <fcitx-utils/eventdispatcher.h>
 #include <fcitx-utils/key.h>
+#include <fcitx-utils/trackableobject.h>
 
 #include "engine.h"
 
@@ -67,14 +72,42 @@ struct TelebitInputState : public fcitx::InputContextProperty {
     char lastDispatchedChar = '\0';
     bool capitalizeNextLetter = false;
 
+    // AI prompt mode: while active, keystrokes accumulate into a prompt shown
+    // in the preedit (never committed to the app) until the user presses Enter
+    // to send it to the LLM. `aiRawAscii` holds the raw Telex keystrokes so the
+    // preedit can display the converted Vietnamese. `aiRequestSeq` tags each
+    // in-flight request so a stale async result is ignored after cancel/reset.
+    bool aiPromptMode = false;
+    bool aiBusy = false;
+    // True while the clipboard is being fetched on a worker thread.
+    bool aiContextLoading = false;
+    // Set when Enter is pressed while the clipboard is still loading; the
+    // request is dispatched automatically once the fetch completes.
+    bool aiPendingSend = false;
+    std::string aiRawAscii;
+    // Optional clipboard context pasted with Ctrl+V, sent alongside the prompt.
+    std::string aiContext;
+    std::uint64_t aiRequestSeq = 0;
+
     void clearRollback() {
         rollbackRawAscii.clear();
         rollbackDisplay.clear();
     }
 
+    void clearAi() {
+        aiPromptMode = false;
+        aiBusy = false;
+        aiContextLoading = false;
+        aiPendingSend = false;
+        aiRawAscii.clear();
+        aiContext.clear();
+        ++aiRequestSeq;  // invalidate any in-flight response
+    }
+
     void resetAll() {
         engine.reset();
         clearRollback();
+        clearAi();
         lastDispatchedChar = '\0';
         capitalizeNextLetter = false;
     }
@@ -141,6 +174,41 @@ private:
             fcitx::KeyListConstrain()
         };
 
+        // Trợ lý AI. Mọi tham số (API key, endpoint, model, system prompt,
+        // max tokens) đều lấy từ BIẾN MÔI TRƯỜNG (AI_API_KEY, AI_ENDPOINT,
+        // AI_MODEL, AI_SYSTEM_PROMPT, AI_MAX_TOKENS) — không lưu trong config
+        // này để tránh rò rỉ key. Phím mở ô nhập cố định là Ctrl+Shift+Space.
+        fcitx::Option<bool, fcitx::NoConstrain<bool>,
+                      fcitx::DefaultMarshaller<bool>, fcitx::ToolTipAnnotation>
+            aiEnabled{
+                this,
+                "AIEnabled",
+                "Bật trợ lý AI: mở ô bằng Ctrl+Shift+Space, gõ yêu cầu rồi "
+                "Enter để sinh văn bản \n Cách cấu hình: https://github.com/sonnam0904/telebit/blob/main/docs/ai-assistant.md",
+                false,
+                fcitx::NoConstrain<bool>(),
+                fcitx::DefaultMarshaller<bool>(),
+                fcitx::ToolTipAnnotation(
+                    "Cấu hình qua biến môi trường: AI_API_KEY, AI_ENDPOINT, "
+                    "AI_MODEL, AI_SYSTEM_PROMPT, AI_MAX_TOKENS. \n Hướng dẫn: "
+                    "https://github.com/sonnam0904/telebit/blob/main/docs/ai-assistant.md")};
+
+        fcitx::KeyListOption aiTriggerKey{
+            this,
+            "AITriggerKey",
+            "Phím mở ô nhập yêu cầu AI (bấm lại để thoát; Enter để gửi)",
+            {fcitx::Key("Control+Shift+space")},
+            fcitx::KeyListConstrain()
+        };
+
+        fcitx::Option<std::string> aiSkillsDir{
+            this,
+            "AISkillsDir",
+            "Thư mục chứa file skill (.md). Trong ô AI gõ /tên-skill ở đầu để "
+            "nạp file tên-skill.md làm hướng dẫn (vd: /reply-email). Hỗ trợ ~.",
+            ""
+        };
+
         fcitx::Option<std::vector<fcitx::TelebitMacroConfig>,
                       fcitx::NoConstrain<std::vector<fcitx::TelebitMacroConfig>>,
                       fcitx::DefaultMarshaller<std::vector<fcitx::TelebitMacroConfig>>,
@@ -185,6 +253,21 @@ private:
     fcitx::Instance *instance_ = nullptr;
     std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>> focusInWatcher_;
 
+    // Posts AI results back from worker threads onto the fcitx event loop.
+    std::shared_ptr<fcitx::EventDispatcher> aiDispatcher_;
+    // Cleared on destruction so a late scheduled callback becomes a no-op
+    // instead of touching a dead engine (both run on the event-loop thread).
+    std::shared_ptr<std::atomic<bool>> aiAlive_ =
+        std::make_shared<std::atomic<bool>>(true);
+
+    // Animated "thinking" indicator: while a request is in flight, a recurring
+    // timer cycles the ellipsis ([AI.] → [AI..] → [AI...]). The timer targets
+    // one input context (the one that dispatched) and self-stops once that
+    // context is no longer busy.
+    std::unique_ptr<fcitx::EventSourceTime> aiSpinnerTimer_;
+    fcitx::TrackableObjectReference<fcitx::InputContext> aiSpinnerIc_;
+    int aiSpinnerPhase_ = 0;
+
     TelebitFcitx5Config config_;
     std::unordered_set<std::string> seenProgramsLower_;
     std::unordered_set<std::string> forcePreeditEnabledLower_;
@@ -210,6 +293,16 @@ private:
                          fcitx::KeyEvent &keyEvent);
     void keyEventDirectRollback(fcitx::InputContext *ic, TelebitInputState *state,
                                 fcitx::KeyEvent &keyEvent);
+
+    // AI prompt mode.
+    void enterAiPromptMode(fcitx::InputContext *ic, TelebitInputState *state);
+    void keyEventAiPrompt(fcitx::InputContext *ic, TelebitInputState *state,
+                          fcitx::KeyEvent &keyEvent);
+    void updateAiPreedit(fcitx::InputContext *ic, TelebitInputState *state);
+    void loadClipboardAsync(fcitx::InputContext *ic, TelebitInputState *state);
+    void dispatchAiRequest(fcitx::InputContext *ic, TelebitInputState *state);
+    void startAiSpinner(fcitx::InputContext *ic);
+    void stopAiSpinner();
 };
 
 class TelebitFcitx5EngineFactory : public fcitx::AddonFactory {

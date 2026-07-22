@@ -1,5 +1,8 @@
+find_package(CURL REQUIRED)
+
 add_library(telebit_fcitx5 SHARED
     telebit_fcitx5.cpp
+    ../../ai_client.cpp
     ../../engine.cpp
     ../../vietnamese.cpp
     ../../rime_table.cpp
@@ -11,7 +14,7 @@ target_include_directories(telebit_fcitx5 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../..
 )
 
-target_link_libraries(telebit_fcitx5 PRIVATE Fcitx5::Core)
+target_link_libraries(telebit_fcitx5 PRIVATE Fcitx5::Core CURL::libcurl)
 
 # Produce telebit-fcitx5.so instead of libtelebit_fcitx5.so
 set_target_properties(telebit_fcitx5 PROPERTIES

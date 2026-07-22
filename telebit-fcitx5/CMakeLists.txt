@@ -32,7 +32,11 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Vietnamese Telex input method for fcitx5"
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "telebit-fcitx5 <https://github.com/sonnam0904/telebit>")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Vietnamese Telex (UTF-8) engine and fcitx5 addon (Telebit). After install, add Telebit in fcitx5-configtool and restart fcitx5.")
 set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "fcitx5, libfcitx5core5 | libfcitx5core7 | libfcitx5core8 | libfcitx5core9 | libfcitx5core10")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "fcitx5, libfcitx5core5 | libfcitx5core7 | libfcitx5core8 | libfcitx5core9 | libfcitx5core10, libcurl4 | libcurl4t64")
+# The AI Ctrl+V context feature shells out to wl-paste (Wayland) or xclip (X11).
+# Recommend both — a user only runs one display server, so neither is a hard
+# dependency, but at least one should be present for the feature to work.
+set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "wl-clipboard, xclip")
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 
 # RPM settings
@@ -41,7 +45,9 @@ set(CPACK_RPM_PACKAGE_NAME "telebit-fcitx5")
 set(CPACK_RPM_PACKAGE_VERSION "${_telebit_pkg_ver}")
 set(CPACK_RPM_PACKAGE_LICENSE "GPLv3+")
 set(CPACK_RPM_PACKAGE_GROUP "System Environment/Libraries")
-set(CPACK_RPM_PACKAGE_REQUIRES "fcitx5")
+set(CPACK_RPM_PACKAGE_REQUIRES "fcitx5, libcurl")
+# See the DEB recommends above: wl-paste / xclip back the AI Ctrl+V context path.
+set(CPACK_RPM_PACKAGE_SUGGESTS "wl-clipboard, xclip")
 set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
 
 include(CPack)

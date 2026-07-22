@@ -376,6 +376,16 @@ Addon `telebit-fcitx5` hỗ trợ **2 chế độ chính**:
 
 ---
 
+## Cấu hình trợ lý AI
+
+Telebit có **trợ lý AI**: mở ô nhập ngay trong lúc gõ (`Ctrl+Shift+Space`), viết yêu cầu — kèm ngữ cảnh copy được (`Ctrl+V`) nếu muốn — rồi `Enter` để AI sinh văn bản và chèn thẳng vào ứng dụng. Hữu ích cho: soạn/trả lời tin nhắn, dịch, tóm tắt, sửa câu…
+
+Mọi tham số (API key, endpoint, model, temperature…) đều đọc từ **biến môi trường**, và bạn có thể tạo sẵn các **skill** (`/tên-skill`) để tái sử dụng hướng dẫn.
+
+📖 **Xem hướng dẫn đầy đủ: [Trợ lý AI](docs/ai-assistant.md)** — bật tính năng, bảng biến môi trường, cách dùng phím tắt, và tạo skill.
+
+---
+
 ## 6. Gỡ cài đặt addon `telebit-fcitx5`
 
 ### 6.1. Nếu đã cài bằng gói `.deb` hoặc qua APT repo
