@@ -150,6 +150,7 @@ sudo apt install telebit
 ### 3.1. Yêu cầu
 
 - Đã cài **fcitx5** và header phát triển (tuỳ distro: `libfcitx5core-dev`, `fcitx5-devel`, …).
+- **Header phát triển của libcurl** (cho trợ lý AI): `libcurl4-openssl-dev` (Debian/Ubuntu), `libcurl-devel` (Fedora), `curl` (Arch).
 
 **Gợi ý cài đặt (Linux):**
 
@@ -158,14 +159,14 @@ sudo apt install telebit
 sudo apt update
 sudo apt install -y \
   fcitx5 fcitx5-configtool fcitx5-config-qt fcitx5-module-lua \
-  libfcitx5core-dev libfcitx5utils-dev \
+  libfcitx5core-dev libfcitx5utils-dev libcurl4-openssl-dev \
   extra-cmake-modules cmake build-essential
 
 # Fedora (tên gói có thể thay đổi theo phiên bản)
-sudo dnf install -y fcitx5 fcitx5-configtool fcitx5-devel
+sudo dnf install -y fcitx5 fcitx5-configtool fcitx5-devel libcurl-devel
 
 # Arch
-sudo pacman -S --needed fcitx5 fcitx5-configtool
+sudo pacman -S --needed fcitx5 fcitx5-configtool curl
 ```
 
 ### 3.2. Cài đặt thủ công bằng CMake

@@ -23,7 +23,7 @@ docker run --rm \
   fedora:43 \
   bash -lc '
     set -euo pipefail
-    dnf install -y cmake gcc-c++ make fcitx5-devel extra-cmake-modules git rpm-build
+    dnf install -y cmake gcc-c++ make fcitx5-devel extra-cmake-modules git rpm-build libcurl-devel
     git config --global --add safe.directory /workspace
     bash scripts/build-rpm.sh
   '

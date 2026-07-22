@@ -38,7 +38,7 @@ docker run --rm \
     set -euo pipefail
     apt-get update -qq
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      git ca-certificates build-essential cmake pkg-config libfcitx5core-dev
+      git ca-certificates build-essential cmake pkg-config libfcitx5core-dev libcurl4-openssl-dev
     bash scripts/build-deb.sh
   '
 
