@@ -1,3 +1,10 @@
+## [2.5.1](https://github.com/sonnam0904/telebit/compare/v2.5.0...v2.5.1) (2026-07-23)
+
+
+### Bug Fixes
+
+* enhance Vietnamese syllable processing for đ-initial rimes ([1582526](https://github.com/sonnam0904/telebit/commit/158252625664a13bff71e6765ef487dc7afd05ce))
+
 # [2.5.0](https://github.com/sonnam0904/telebit/compare/v2.4.0...v2.5.0) (2026-07-22)
 
 
