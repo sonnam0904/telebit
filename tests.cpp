@@ -483,6 +483,28 @@ static void test_incremental_typing_detection() {
     assert(seen_vietnamese);
 }
 
+static void test_dong_progressive_rimes() {
+    // đ is only ever produced by a deliberate leading "dd", so an đ-initial
+    // syllable in progress must keep its đ instead of bouncing back to "dd"
+    // while the rime is still a bare vowel cluster (bug: "ddie" showed "ddie").
+    assert(telex_to_unicode("ddie") == "đie");   // on the way to điếc/điết
+    assert(telex_to_unicode("dduo") == "đuo");   // on the way to đuốc/được/đười
+    // Final syllables for the rimes iêc/iết/uôc/ước/ươi/ươu still convert.
+    assert(telex_to_unicode("ddieecs") == "điếc");
+    assert(telex_to_unicode("ddieets") == "điết");
+    assert(telex_to_unicode("dduoocs") == "đuốc");
+    assert(telex_to_unicode("dduowcj") == "được");
+    assert(telex_to_unicode("dduowi") == "đươi");
+    assert(telex_to_unicode("dduowu") == "đươu");
+    // The relaxation is đ-only: other onsets and English words are untouched.
+    assert(telex_to_unicode("tie") == "tie");
+    assert(telex_to_unicode("bie") == "bie");
+    assert(telex_to_unicode("daddy") == "daddy");
+    // An đ-initial rime with a coda that is not a valid syllable still restores.
+    assert(telex_to_unicode("ddog") == "ddog");
+    assert(telex_to_unicode("ddz") == "ddz");
+}
+
 int main() {
     test_tones();
     test_vowels();
@@ -507,6 +529,7 @@ int main() {
     test_vni_mode();
     test_modern_tone_style();
     test_engine_macros_and_vni();
+    test_dong_progressive_rimes();
     std::cout << "All C++ tests passed.\n";
     return 0;
 }

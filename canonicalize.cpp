@@ -427,8 +427,9 @@ bool isValidSyllable(const std::string& onset, const std::string& shapedRime) {
     }
     if (!onsetOk) return false;
 
+    const bool dongPrefix = !shapedRime.empty() && shapedRime.front() == 'D';  // đ + ...
     std::string_view rime{shapedRime};
-    if (!rime.empty() && rime.front() == 'D') rime.remove_prefix(1);  // đ + rime
+    if (dongPrefix) rime.remove_prefix(1);
     if (rime.empty()) return true;
     if (kInternalVowels.find(rime.front()) == std::string_view::npos) return false;
     for (char c : rime) {
@@ -442,7 +443,22 @@ bool isValidSyllable(const std::string& onset, const std::string& shapedRime) {
     // Accept prefixes of valid rimes so partially typed syllables keep converting
     // (e.g. "tiê" while on the way to "tiên"). Precomputed once, so this is an
     // O(1) hash lookup instead of scanning every table entry.
-    return getRimeMainVowelPrefixSet().count(key) != 0;
+    if (getRimeMainVowelPrefixSet().count(key) != 0) return true;
+
+    // đ is only ever produced by deliberately typing a leading "dd" (no English
+    // word starts that way), so an đ-initial syllable whose rime is still a bare
+    // vowel cluster is a Vietnamese word in progress. Keep converting instead of
+    // bouncing the preedit back to "dd" while the rime builds toward its final
+    // shape — e.g. đie->điếc, đuo->đuốc/được, đuo->đười/đươu. Once a coda
+    // consonant is typed the table lookup above governs again, so real garbage
+    // still restores.
+    if (dongPrefix) {
+        for (char c : rime) {
+            if (kInternalVowels.find(c) == std::string_view::npos) return false;
+        }
+        return true;
+    }
+    return false;
 }
 
 void splitOnsetRimeShaped(const std::string& body, std::string& onset, std::string& rime) {
