@@ -12,6 +12,8 @@ copyright: Telebit — Vietnamese Telex/VNI input method for fcitx5
 theme:
   name: material
   language: vi
+  # Only overrides/partials/path.html — see the comment in that file for why.
+  custom_dir: overrides
   icon:
     repo: fontawesome/brands/github
   palette:
@@ -36,6 +38,8 @@ theme:
     - navigation.top
     - navigation.tracking
     - navigation.footer
+    # Breadcrumbs above the page title, rooted at "Home".
+    - navigation.path
     - toc.follow
     - search.suggest
     - search.highlight
@@ -65,7 +69,7 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
-  - Trang chủ: index.md
+  - Home: home.md
   - Bắt đầu:
       - getting-started/index.md
       - Cài đặt: getting-started/installation.md

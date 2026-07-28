@@ -1,0 +1,31 @@
+{#-
+  Breadcrumbs, overridden so they survive the homepage living at /home/.
+
+  Material's own partials/path.html roots the trail at `nav.homepage`, which
+  MkDocs only populates for a literal docs/index.md. Our homepage is
+  docs/home.md (so its URL is /home/), which leaves nav.homepage empty — and the
+  upstream `depth > 1` guard then suppresses the breadcrumb on every page. Here
+  the "Home" crumb is emitted explicitly instead, and the guard keys off the
+  page's own ancestors.
+
+  Everything else (markup, classes, the path-item macro) matches upstream so the
+  theme's CSS and overflow handling keep working.
+-#}
+{% import "partials/path-item.html" as item with context %}
+{% if page.meta and page.meta.hide %}
+  {% set hidden = "hidden" if "path" in page.meta.hide %}
+{% endif %}
+{% if page.ancestors %}
+  <nav class="md-path" aria-label="{{ lang.t('nav') }}" {{ hidden }}>
+    <ol class="md-path__list">
+      <li class="md-path__item">
+        <a href="{{ 'home/' | url }}" class="md-path__link">
+          <span class="md-ellipsis">Home</span>
+        </a>
+      </li>
+      {% for nav_item in page.ancestors | reverse %}
+        {{ item.render(nav_item) }}
+      {% endfor %}
+    </ol>
+  </nav>
+{% endif %}

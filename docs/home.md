@@ -1,5 +1,5 @@
 ---
-title: Trang chủ
+title: Home
 ---
 
 # Telebit
