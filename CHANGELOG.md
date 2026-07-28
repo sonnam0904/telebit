@@ -1,3 +1,10 @@
+# [2.6.0](https://github.com/sonnam0904/telebit/compare/v2.5.1...v2.6.0) (2026-07-28)
+
+
+### Features
+
+* enhance Vietnamese syllable processing with trailing hat escape and update release configuration ([1c24a54](https://github.com/sonnam0904/telebit/commit/1c24a547a6cc7583d11ae30bf7ff3cc3bfa8f758))
+
 ## [2.5.1](https://github.com/sonnam0904/telebit/compare/v2.5.0...v2.5.1) (2026-07-23)
 
 
