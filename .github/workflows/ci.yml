@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  # Release gates its packaging and publish jobs on this same workflow so a
+  # broken conversion can never be shipped.
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The root CMakeLists builds only the core library and the test binary,
+      # so this needs nothing beyond the compiler and cmake already on the
+      # runner — no fcitx5 or libcurl headers.
+      - name: Build core library and tests
+        run: |
+          cmake -B build .
+          cmake --build build -j"$(nproc)"
+
+      - name: Run C++ tests
+        run: ./build/telebit_telex_tests

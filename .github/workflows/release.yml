@@ -12,8 +12,15 @@ permissions:
   pull-requests: write
 
 jobs:
+  # Reuses the CI workflow rather than repeating the build+test steps here.
+  # Everything below gates on it, so a failing conversion test blocks both the
+  # packages and the published release.
+  test:
+    uses: ./.github/workflows/ci.yml
+
   # Two runners: jammy = older libstdc++ (22.04 users); noble = 24.04+ toolchains.
   package-deb:
+    needs: test
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +50,7 @@ jobs:
           path: telebit-fcitx5/build-deb/*.deb
 
   package-rpm:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +76,7 @@ jobs:
           path: telebit-fcitx5/build-rpm/*.rpm
 
   release:
+    needs: test
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4

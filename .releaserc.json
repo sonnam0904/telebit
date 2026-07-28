@@ -27,8 +27,12 @@
       {
         "assets": [
           {
-            "path": "release-debs/*.deb",
-            "label": "Debian amd64 (.deb)"
+            "path": "release-debs/*+jammy*.deb",
+            "label": "Debian/Ubuntu amd64 (.deb) - Ubuntu 22.04 jammy"
+          },
+          {
+            "path": "release-debs/*+noble*.deb",
+            "label": "Debian/Ubuntu amd64 (.deb) - Ubuntu 24.04 noble"
           },
           {
             "path": "release-rpms/*.rpm",

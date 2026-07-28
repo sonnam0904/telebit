@@ -1,5 +1,11 @@
 // Minimal C++ tests mirroring tests/test_vietnamese.py for the C++ port.
 
+// Every check here is an assert, and the default build type is Release, which
+// defines NDEBUG and would compile all of them away — the suite then "passes"
+// without testing anything. Drop NDEBUG before <cassert> so the asserts stay
+// live no matter how the caller configured the build.
+#undef NDEBUG
+
 #include "engine.h"
 #include "vietnamese.h"
 
@@ -124,6 +130,40 @@ static void test_triple_vowels_english() {
     assert(telex_to_unicode("edddy") == "eddy");
     // Non-contiguous triple: not a valid syllable, spell check keeps the raw word.
     assert(telex_to_unicode("telee") == "telee");
+}
+
+static void test_trailing_hat_escape() {
+    // The hat key may land after the coda, so "data" reads as "dât". Repeating it
+    // is the undo, and a trailing "aa" restores the literal letters.
+    assert(telex_to_unicode("data") == "dât");
+    assert(telex_to_unicode("dataa") == "data");
+    assert(telex_to_unicode("gamaa") == "gama");
+    // Casing survives the escape.
+    assert(telex_to_unicode("Dataa") == "Data");
+    assert(telex_to_unicode("DATAA") == "DATA");
+    // "aaa" still escapes to a literal "aa" (checked before this rule).
+    assert(telex_to_unicode("dataaa") == "dataa");
+
+    // Adjacent "aa" is plain Telex: the prefix has no hat yet, so nothing escapes.
+    assert(telex_to_unicode("caa") == "câ");
+    assert(telex_to_unicode("aa") == "â");
+    assert(telex_to_unicode("baa") == "bâ");
+    // Only a *trailing* "aa" is an escape: English words that merely contain one
+    // are untouched, and so are Vietnamese words still being typed.
+    assert(telex_to_unicode("salaam") == "salaam");
+    assert(telex_to_unicode("bazaar") == "bazaar");
+    assert(telex_to_unicode("aardvark") == "aardvark");
+    assert(telex_to_unicode("Isaac") == "Isaac");
+    assert(telex_to_unicode("Canaan") == "Canaan");
+    assert(telex_to_unicode("graal") == "graal");
+    assert(telex_to_unicode("caan") == "cân");
+    assert(telex_to_unicode("khuaay") == "khuây");
+    // A trailing "aa" whose prefix never grew a hat stays literal: "sofa" is a
+    // tone ("sòa"), so it keeps using the doubled-tone-key escape instead.
+    assert(telex_to_unicode("sofaa") == "sofaa");
+    assert(telex_to_unicode("soffa") == "sofa");
+    assert(telex_to_unicode("javaa") == "javaa");
+    assert(telex_to_unicode("pandaa") == "pandaa");
 }
 
 static void test_open_glide_rimes() {
@@ -518,6 +558,7 @@ int main() {
     test_english_passthrough();
     test_mixed_vietnamese_english();
     test_triple_vowels_english();
+    test_trailing_hat_escape();
     test_all_vowel_tone_combinations();
     test_basic_word_tones();
     test_additional_words();

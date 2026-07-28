@@ -23,7 +23,7 @@ static bool isAsciiVowel(char c) {
 // Runs the plain Telex pipeline on a lowercase word and reports whether the result
 // is a valid Vietnamese syllable. Used to decide if a doubled tone key really was
 // a tone application (escape) rather than plain English letters.
-static bool telexWordConverts(const std::string& lowerWord) {
+static bool telexWordConverts(const std::string& lowerWord, std::string* outShaped = nullptr) {
     std::string body;
     int tone = 0;
     bool strip = false;
@@ -33,7 +33,32 @@ static bool telexWordConverts(const std::string& lowerWord) {
     splitOnsetRime(body, onset, rimeRaw);
     rimeRaw = canonicalizeRimeByTable(rimeRaw);
     std::string shaped = applyShapesRime(rimeRaw);
+    if (outShaped != nullptr) *outShaped = shaped;
     return isValidSyllable(onset, shaped);
+}
+
+// Telex lets the hat key land after the coda, so "data" already reads as "dât".
+// Repeating the key is the user's undo, but the escape table above only sees
+// adjacent doubles ("aaa"), so "dataa" used to fall through to the spell-check
+// restore and keep both a's. Handle the non-adjacent case here — for 'a' only:
+// English words with two consecutive a's are vanishingly rare, while "ee"/"oo"
+// are common enough ("coffee", "agree", "zoo") that the same rule would misfire.
+//
+// Scoped to a trailing "aa" so a word that merely contains one ("Canaan",
+// "salaam") is never touched. The prefix must already have produced "â" ('B' in
+// the shaped rime), which is what makes the adjacent case fall out for free:
+// "caa" has prefix "ca" with no hat yet, so it still converts to "câ".
+static bool applyTrailingHatEscape(const std::string& word, const std::string& lower,
+                                   std::string& outRaw) {
+    const std::size_t n = lower.size();
+    if (n < 3 || lower[n - 1] != 'a' || lower[n - 2] != 'a') return false;
+
+    std::string shaped;
+    if (!telexWordConverts(lower.substr(0, n - 1), &shaped)) return false;
+    if (shaped.find('B') == std::string::npos) return false;
+
+    outRaw = word.substr(0, n - 1);
+    return true;
 }
 
 bool applyEscapeRules(const std::string& word, const std::string& lower, std::string& outRaw) {
@@ -82,7 +107,7 @@ bool applyEscapeRules(const std::string& word, const std::string& lower, std::st
         if (after < word.size()) outRaw.append(word.substr(after));
         return true;
     }
-    return false;
+    return applyTrailingHatEscape(word, lower, outRaw);
 }
 
 bool normalizeTripleVowels(std::string& s) {
