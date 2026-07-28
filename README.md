@@ -12,8 +12,8 @@
     <a href="https://github.com/sonnam0904/telebit/releases">
       <img src="https://img.shields.io/github/v/release/sonnam0904/telebit?style=flat&color=success" alt="Release">
     </a>
-    <a href="https://github.com/sonnam0904/telebit/blob/main/README.md">
-      <img src="https://img.shields.io/badge/docs-README-informational?style=flat" alt="Documentation">
+    <a href="https://sonnam0904.github.io/telebit/">
+      <img src="https://img.shields.io/badge/docs-website-informational?style=flat" alt="Documentation">
     </a>
     <a href="https://github.com/sonnam0904/telebit/stargazers">
       <img src="https://img.shields.io/github/stars/sonnam0904/telebit?style=flat&color=yellow" alt="Stars">
@@ -27,11 +27,13 @@
   </p>
 
   <p align="center">
-    <a href="#installation"><strong>Hướng dẫn cài đặt »</strong></a>
+    <a href="https://sonnam0904.github.io/telebit/"><strong>📖 Trang hướng dẫn đầy đủ »</strong></a>
     &nbsp;&middot;&nbsp;
-    <a href="remove-vnkey.md"><strong>Gỡ vnkey cũ</strong></a>
+    <a href="https://sonnam0904.github.io/telebit/getting-started/installation/"><strong>Cài đặt</strong></a>
     &nbsp;&middot;&nbsp;
-    <a href="vietnamese.md"><strong>Vietnamese syllable structure</strong></a>
+    <a href="https://sonnam0904.github.io/telebit/reference/migrate-from-vnkey/"><strong>Gỡ vnkey cũ</strong></a>
+    &nbsp;&middot;&nbsp;
+    <a href="https://sonnam0904.github.io/telebit/concepts/vietnamese-syllable/"><strong>Cấu trúc âm tiết</strong></a>
     <br />
     <br />
     <a href="https://github.com/sonnam0904/telebit/issues/new">Báo cáo lỗi</a>
@@ -46,7 +48,7 @@
 - **Core C++ engine**: hàm `telex_to_unicode` chuyển chuỗi Telex ASCII → Unicode tiếng Việt (dùng được độc lập).
 - **fcitx5 addon**: module `telebit-fcitx5` cho Linux desktop (GNOME/KDE/…).
 
-Thiết kế dựa trên **cấu trúc âm tiết tiếng Việt** (*Âm đầu + Vần + Thanh*). Mô tả chi tiết xem thêm trong [`vietnamese.md`](vietnamese.md).
+Thiết kế dựa trên **cấu trúc âm tiết tiếng Việt** (*Âm đầu + Vần + Thanh*). Mô tả chi tiết xem [Cấu trúc âm tiết](https://sonnam0904.github.io/telebit/concepts/vietnamese-syllable/).
 
 ---
 
@@ -108,7 +110,7 @@ cmake --build build
 ./build/telebit_telex_tests
 ```
 
-Nếu trước đó bạn dùng bộ gõ **vnkey** cũ và muốn chuyển sang Telebit: xem hướng dẫn chi tiết trong [`remove-vnkey.md`](remove-vnkey.md).
+Nếu trước đó bạn dùng bộ gõ **vnkey** cũ và muốn chuyển sang Telebit: xem [Chuyển từ vnkey](https://sonnam0904.github.io/telebit/reference/migrate-from-vnkey/).
 
 ---
 
@@ -383,7 +385,7 @@ Telebit có **trợ lý AI**: mở ô nhập ngay trong lúc gõ (`Ctrl+Shift+Sp
 
 Mọi tham số (API key, endpoint, model, temperature…) đều đọc từ **biến môi trường**, và bạn có thể tạo sẵn các **skill** (`/tên-skill`) để tái sử dụng hướng dẫn.
 
-📖 **Xem hướng dẫn đầy đủ: [Trợ lý AI](docs/ai-assistant.md)** — bật tính năng, bảng biến môi trường, cách dùng phím tắt, và tạo skill.
+📖 **Xem hướng dẫn đầy đủ: [Trợ lý AI](https://sonnam0904.github.io/telebit/ai-assistant/)** — bật tính năng, bảng biến môi trường, cách dùng phím tắt, và tạo skill.
 
 ---
 

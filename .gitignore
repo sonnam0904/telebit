@@ -35,3 +35,8 @@ pnpm-debug.log*
 # semantic-release dual-target .deb output
 /release-debs/
 /release-rpms/
+
+# MkDocs build output (published by .github/workflows/docs.yml)
+/site/
+.venv/
+openwiki/

@@ -1,6 +1,6 @@
 # Trợ lý AI trong Telebit
 
-> Quay lại [README](../README.md#cấu-hình-trợ-lý-ai).
+> Xem thêm: [Tuỳ chọn cấu hình](guide/configuration.md) cho các thiết lập còn lại của addon.
 
 Telebit có **trợ lý AI**: mở một ô nhập ngay trong lúc gõ, viết yêu cầu (kèm ngữ cảnh copy được nếu muốn), nhấn Enter để AI sinh văn bản và chèn thẳng vào ô nhập của ứng dụng. Hữu ích cho: soạn/trả lời tin nhắn, dịch, tóm tắt, sửa câu…
 

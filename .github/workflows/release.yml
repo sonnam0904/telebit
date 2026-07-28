@@ -11,6 +11,14 @@ permissions:
   issues: write
   pull-requests: write
 
+# The publish-apt steps below push to gh-pages, which the Docs workflow also
+# writes (the docs site is overlaid on top of the APT repo). Share one
+# concurrency group so a docs deploy and an APT publish can never interleave and
+# lose each other's commit.
+concurrency:
+  group: gh-pages-write
+  cancel-in-progress: false
+
 jobs:
   # Reuses the CI workflow rather than repeating the build+test steps here.
   # Everything below gates on it, so a failing conversion test blocks both the

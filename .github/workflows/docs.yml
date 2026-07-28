@@ -1,0 +1,120 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'docs-requirements.txt'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'docs-requirements.txt'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+# The gh-pages branch is shared with the APT repo publisher in release.yml.
+# Serialize every writer so the two never race on the same ref.
+concurrency:
+  group: gh-pages-write
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: pip
+          cache-dependency-path: docs-requirements.txt
+
+      - name: Install MkDocs
+        run: pip install -r docs-requirements.txt
+
+      # --strict turns broken internal links into build failures, so a bad link
+      # never reaches the published site.
+      - name: Build site
+        run: mkdocs build --strict
+
+      # Everything below only runs for pushes to main; a PR just gets the build
+      # checked, with no write to gh-pages.
+      - name: Checkout gh-pages
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      # gh-pages also serves the signed APT repo (dists/, pool/, pubkey.gpg)
+      # that users' sources.list points at. Copy the site *over* that tree with
+      # no --delete so the repo keeps working: `mkdocs gh-deploy` must never be
+      # used here, it force-pushes an orphan commit and would wipe the packages.
+      - name: Overlay the site onto gh-pages, keeping the APT repo
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          rsync -a site/ gh-pages/
+          # Required for Material: it ships asset dirs GitHub Pages' Jekyll
+          # would otherwise skip.
+          touch gh-pages/.nojekyll
+
+      - name: Verify the APT repo survived the overlay
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          missing=0
+          for p in pubkey.gpg dists/jammy/InRelease dists/jammy/Release \
+                   dists/noble/InRelease dists/noble/Release; do
+            if [[ ! -f "gh-pages/${p}" ]]; then
+              echo "FATAL: APT repo file '${p}' is gone" >&2
+              missing=1
+            fi
+          done
+          shopt -s nullglob
+          debs=(gh-pages/pool/*/main/*/*.deb)
+          shopt -u nullglob
+          if [[ ${#debs[@]} -eq 0 ]]; then
+            echo "FATAL: no .deb left in gh-pages/pool" >&2
+            missing=1
+          else
+            echo "APT repo intact: ${#debs[@]} .deb still present"
+          fi
+          if [[ ${missing} -ne 0 ]]; then
+            echo "Refusing to push — this would break 'apt update' for users." >&2
+            exit 1
+          fi
+
+      - name: Commit and push
+        if: github.event_name != 'pull_request'
+        working-directory: gh-pages
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Site unchanged, nothing to publish"
+            exit 0
+          fi
+          git commit -m "docs: publish site from ${GITHUB_SHA:0:7}"
+          # The APT publisher may have landed a commit between our checkout and
+          # this push; rebase onto it and retry rather than clobbering it.
+          for attempt in 1 2 3; do
+            if git push origin gh-pages; then
+              exit 0
+            fi
+            echo "Push rejected (attempt ${attempt}), rebasing onto origin/gh-pages"
+            git pull --rebase origin gh-pages
+          done
+          echo "Could not push after 3 attempts" >&2
+          exit 1

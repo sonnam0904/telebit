@@ -1,0 +1,4 @@
+# Dependencies for building the documentation site in docs/ (see
+# .github/workflows/docs.yml). Kept outside docs/ so it is not published as
+# part of the site.
+mkdocs-material==9.5.49
