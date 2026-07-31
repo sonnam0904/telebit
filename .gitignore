@@ -40,3 +40,4 @@ pnpm-debug.log*
 /site/
 .venv/
 openwiki/
+.codegraph/
