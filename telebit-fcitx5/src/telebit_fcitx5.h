@@ -231,12 +231,20 @@ private:
                 this,
                 "ForcePreeditApps",
                 "Danh sách ứng dụng sử dụng telebit",
-                std::vector<fcitx::TelebitForcePreeditAppConfig>{[] {
-                    fcitx::TelebitForcePreeditAppConfig app;
-                    *app.program.mutableValue() = "firefox";
-                    *app.enabled.mutableValue() = true; // chỉ khi chưa có file config
-                    return app;
-                }()},
+                // Chỉ áp dụng khi chưa có file config. Máy đã có config sẽ được
+                // bật khi ứng dụng được focus lần đầu — xem
+                // defaultPreeditPrograms() trong .cpp.
+                [] {
+                    std::vector<fcitx::TelebitForcePreeditAppConfig> apps;
+                    for (const char *program :
+                         {"firefox", "chrome", "google-chrome", "chromium"}) {
+                        fcitx::TelebitForcePreeditAppConfig app;
+                        *app.program.mutableValue() = program;
+                        *app.enabled.mutableValue() = true;
+                        apps.push_back(std::move(app));
+                    }
+                    return apps;
+                }(),
                 fcitx::NoConstrain<std::vector<fcitx::TelebitForcePreeditAppConfig>>(),
                 fcitx::DefaultMarshaller<std::vector<fcitx::TelebitForcePreeditAppConfig>>(),
                 fcitx::ListDisplayOptionAnnotation("Program")

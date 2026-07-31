@@ -93,6 +93,23 @@ std::string toLowerAscii(std::string s) {
     return s;
 }
 
+// Programs that need preedit mode instead of direct commit: their text fields
+// report SurroundingText support but handle deleteSurroundingText unreliably, so
+// rewriting a word in place corrupts it. Browsers are the main offenders (both
+// Gecko and Blink), hence firefox + the Chrome/Chromium family — the exact name
+// fcitx reports varies by frontend ("chrome" via the GTK/Wayland module,
+// "google-chrome" from WM_CLASS under X11), so all variants are listed.
+//
+// Used for BOTH paths: the fresh-install default in the header, and
+// recordSeenProgram() below, which is what an existing config file goes
+// through — there the entry is created (enabled) the first time the program is
+// focused. Once the entry exists the user's own choice wins forever after.
+bool isDefaultPreeditProgram(const std::string &programLower) {
+    static const std::unordered_set<std::string> kPrograms{
+        "firefox", "chrome", "google-chrome", "chromium"};
+    return kPrograms.count(programLower) != 0;
+}
+
 // Auto-capitalize: a sentence-ending mark that should trigger capitalizing
 // the next sentence once the user presses Enter.
 bool isSentenceEndChar(char c) {
@@ -327,13 +344,21 @@ void TelebitFcitx5Engine::recordSeenProgram(const std::string &program) {
         return;
     }
 
+    // Auto-discovered apps are unchecked by default, except the known
+    // preedit-only programs (browsers), which must be on from the first focus.
+    const bool enabled = isDefaultPreeditProgram(programLower);
+
     fcitx::TelebitForcePreeditAppConfig app;
     *app.program.mutableValue() = programLower;
-    // Auto-discovered apps should be unchecked by default.
-    *app.enabled.mutableValue() = false;
+    *app.enabled.mutableValue() = enabled;
     list->push_back(std::move(app));
 
     seenProgramsLower_.insert(programLower);
+    if (enabled) {
+        // Mirror it into the lookup set too, so it takes effect for this very
+        // focus instead of only after the next config reload.
+        forcePreeditEnabledLower_.insert(programLower);
+    }
     configDirty_ = true;
 }
 
