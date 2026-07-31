@@ -1,3 +1,10 @@
+## [2.6.1](https://github.com/sonnam0904/telebit/compare/v2.6.0...v2.6.1) (2026-07-31)
+
+
+### Bug Fixes
+
+* add support for default preedit programs (chrome) in Telebit Fcitx5 ([8644c9e](https://github.com/sonnam0904/telebit/commit/8644c9eff7af88bd108b354666c40a303b9b6d79))
+
 # [2.6.0](https://github.com/sonnam0904/telebit/compare/v2.5.1...v2.6.0) (2026-07-28)
 
 
