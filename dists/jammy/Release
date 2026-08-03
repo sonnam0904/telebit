@@ -1,24 +1,24 @@
 Architectures: amd64
 Codename: jammy
 Components: main
-Date: Fri, 31 Jul 2026 03:31:30 +0000
+Date: Mon, 03 Aug 2026 11:00:17 +0000
 Description: Telebit Vietnamese Telex/VNI input method (fcitx5) APT repository
 Label: Telebit
 Origin: Telebit
 Suite: jammy
 MD5Sum:
- 1fdd9bd92a1cc6b9729aa8fd370c1a62              215 Release
- e2f4ba4662f6bb58bb60fdf102ee6ffc             1399 main/binary-amd64/Packages
- 0ffdbfb2114edff2fa4373208c7ef23d              713 main/binary-amd64/Packages.gz
+ 8fa3aa607e329da6ad751726f97e348d              215 Release
+ a02f7865e59dfd5976b06fac2969bf96             1399 main/binary-amd64/Packages
+ f99ac2721ea556865cc6440e6f7ba84b              715 main/binary-amd64/Packages.gz
 SHA1:
- 54709937d49ba2465458237215a51e2307154815              215 Release
- 1f7fe1e8471f5e2c5cd500880c3a3475aeddd820             1399 main/binary-amd64/Packages
- 7322bd1eaef2473522477e8f83db41286f7af4fd              713 main/binary-amd64/Packages.gz
+ 2e66eb53e43b0ed3c1ae817f66750baaf9d4c130              215 Release
+ fcfe0a3550973678aea1b5d1439abeccbb791adf             1399 main/binary-amd64/Packages
+ d1baac2575387758f685c78dfb406db9dc9e3a69              715 main/binary-amd64/Packages.gz
 SHA256:
- 361552252c94f372e7953623687d0b898b5346f5b829d5e3b725c402ce718cfe              215 Release
- cd0b2f8711e5958ece03134fbc6e304c535a74d0931b30b70c6b58b438895a9f             1399 main/binary-amd64/Packages
- c0e5f04dd80d05addbd6d4641030472a2688d7cc4697e18b8a46df379e2c2a01              713 main/binary-amd64/Packages.gz
+ 7c95a4deea0c308f91a8c285aa057e05f4b7aeed7637b482fee3c93f53c7baee              215 Release
+ e32a7b7b21337af75a1df57b6ed420b9ecde0e99131fc97e83bbe29b41e01ef7             1399 main/binary-amd64/Packages
+ a39166e1836b7cd93d2a0b7fc62e024d9f64ad8ed576ac075e82599f6c701c8e              715 main/binary-amd64/Packages.gz
 SHA512:
- 5a2b75b08ea811a18ba706acd4e58e1efb64915ff79a5ccc06e8167945aee2b03686ecb4a9677c74d275f285e115a7a57b4319ec6890efa493fa9c3e31ca39d2              215 Release
- 4cab18fa18db23be6312cfb3d28b4c829e2bfe5a69bfe5b996aee5a826b161bd8712ec734b787c3645fb953d258df3f0e7f200523be34907b8c6b2409b3d2c54             1399 main/binary-amd64/Packages
- 6389d62afdf22830328fcd0cf5893181f1715cefd6ec1c8f33c98b74dc2dcb8c71420365eba7e23aaf7ecd18b1a635e2cd3b76dbee22b92655f2cbb379d8537a              713 main/binary-amd64/Packages.gz
+ 4b71749c6bcad3eb6c706f78bdad54285c0f45f6709b5dc769f25597c48c8edef0b4f379e7dc003d7ea6c2886c59f9c16b29acba7c9cc1456f4e932f23c1391e              215 Release
+ f19c6dde048d9d3d7af4f153d02a0a99a06bcf8c27205cc2c39b597883ae751102145bce59a951f29186fdba771e8e2ee93b6dc364bb07d9f41f3c501df1fc93             1399 main/binary-amd64/Packages
+ 6c12c6be6fd595bf3cb9fe9b6ddb72e487ae086c75ca625e98484732c997747f01562c1c822332f93f361cb4d1f64029b03b8860673ff21398e09509287f73d4              715 main/binary-amd64/Packages.gz
