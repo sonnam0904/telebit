@@ -21,7 +21,7 @@ Thêm repo một lần, sau đó `apt upgrade` như mọi gói khác.
 curl -fsSL https://sonnam0904.github.io/telebit/pubkey.gpg \
   | sudo gpg --dearmor -o /usr/share/keyrings/telebit-archive-keyring.gpg
 
-# 2. Thêm repo (jammy = Ubuntu 22.04, noble = 24.04)
+# 2. Thêm repo (jammy = Ubuntu 22.04, noble = 24.04, resolute = 26.04)
 echo "deb [signed-by=/usr/share/keyrings/telebit-archive-keyring.gpg] https://sonnam0904.github.io/telebit $(lsb_release -cs) main" \
   | sudo tee /etc/apt/sources.list.d/telebit.list
 
@@ -33,7 +33,13 @@ sudo apt install telebit
 `telebit` là metapackage, chỉ phụ thuộc gói thật **`telebit-fcitx5`** — nên
 `sudo apt install telebit-fcitx5` cũng cho kết quả y hệt.
 
-!!! info "Repo hiện hỗ trợ jammy và noble"
+!!! info "Repo hỗ trợ jammy, noble và resolute"
+
+    | Suite | Ubuntu |
+    |---|---|
+    | `jammy` | 22.04 LTS |
+    | `noble` | 24.04 LTS |
+    | `resolute` | 26.04 LTS |
 
     Nếu `lsb_release -cs` trả về codename khác (ví dụ `bookworm` của Debian), repo sẽ không có
     suite tương ứng. Khi đó dùng [`.deb` tải tay](#deb) hoặc [CMake](#cmake).
@@ -50,8 +56,11 @@ File `.deb` **không nằm trong repo source**; mỗi bản được build trên
 
 | Nguồn | Cách lấy |
 |---|---|
-| **Releases** | [Trang Releases](https://github.com/sonnam0904/telebit/releases) — mỗi tag có hai `.deb`, hậu tố `+jammy` (22.04) hoặc `+noble` (24.04) |
-| **Artifacts** | **Actions** → **Release** → run mới nhất → **Artifacts** → `telebit-fcitx5-deb-jammy` / `-noble` |
+| **Releases** | [Trang Releases](https://github.com/sonnam0904/telebit/releases) — mỗi tag có ba `.deb`, hậu tố `+jammy` (22.04), `+noble` (24.04) hoặc `+resolute` (26.04) |
+| **Artifacts** | **Actions** → **Release** → run mới nhất → **Artifacts** → `telebit-fcitx5-deb-jammy` / `-noble` / `-resolute` |
+
+Chọn đúng hậu tố cho phiên bản Ubuntu của bạn (`lsb_release -cs` để kiểm tra) — mỗi bản được
+build trên chính release đó nên liên kết với đúng `libstdc++`/`libc` tương ứng.
 
 **2. Cài**
 

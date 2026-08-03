@@ -27,19 +27,17 @@ fcitx5 -r
 ## Cài vào `/usr` (system-wide, bằng CMake hoặc `install.sh`)
 
 ```bash
-sudo rm -f /usr/lib/fcitx5/telebit-fcitx5.so
+sudo rm -f /usr/lib/fcitx5/telebit-fcitx5.so /usr/lib/*/fcitx5/telebit-fcitx5.so
 sudo rm -f /usr/share/fcitx5/addon/telebit-fcitx5.conf
 sudo rm -f /usr/share/fcitx5/inputmethod/telebit-fcitx5.conf
 fcitx5 -r
 ```
 
-!!! note "Đường dẫn `.so` có thể khác"
+!!! note "Vì sao có hai đường dẫn `.so`"
 
-    Một số distro đặt addon trong thư mục theo kiến trúc. Nếu lệnh trên không tìm thấy file:
-
-    ```bash
-    ls /usr/lib/*/fcitx5/telebit-fcitx5.so
-    ```
+    Ubuntu/Debian đặt addon trong thư mục theo kiến trúc
+    (`/usr/lib/x86_64-linux-gnu/fcitx5/`), một số distro khác dùng `/usr/lib/fcitx5/`.
+    Glob `/usr/lib/*/fcitx5/` khớp trường hợp đầu, nên lệnh trên xử lý được cả hai.
 
 ## Cài vào `$HOME/.local` (user-local)
 

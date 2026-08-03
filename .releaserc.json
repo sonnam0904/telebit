@@ -35,6 +35,10 @@
             "label": "Debian/Ubuntu amd64 (.deb) - Ubuntu 24.04 noble"
           },
           {
+            "path": "release-debs/*+resolute*.deb",
+            "label": "Debian/Ubuntu amd64 (.deb) - Ubuntu 26.04 resolute"
+          },
+          {
             "path": "release-rpms/*.rpm",
             "label": "RPM x86_64 (.rpm) - Fedora"
           }

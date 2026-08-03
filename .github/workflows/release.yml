@@ -26,15 +26,22 @@ jobs:
   test:
     uses: ./.github/workflows/ci.yml
 
-  # Two runners: jammy = older libstdc++ (22.04 users); noble = 24.04+ toolchains.
+  # One .deb per Ubuntu suite so each links against that release's own
+  # libstdc++/libc: jammy = 22.04, noble = 24.04, resolute = 26.04.
+  #
+  # jammy/noble build natively on their matching runner. resolute builds inside
+  # a container on a stable runner instead: the hosted `ubuntu-26.04` image is
+  # still preview-only, so depending on it would make releases hostage to a
+  # runner that can change or be unavailable. `image: ""` means "build native".
   package-deb:
     needs: test
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { runner: ubuntu-22.04, suffix: jammy }
-          - { runner: ubuntu-24.04, suffix: noble }
+          - { runner: ubuntu-22.04, suffix: jammy,    image: "" }
+          - { runner: ubuntu-24.04, suffix: noble,    image: "" }
+          - { runner: ubuntu-24.04, suffix: resolute, image: "ubuntu:26.04" }
 
     runs-on: ${{ matrix.runner }}
     steps:
@@ -43,14 +50,37 @@ jobs:
           fetch-depth: 0
 
       - name: Install build dependencies
+        if: matrix.image == ''
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential cmake pkg-config libfcitx5core-dev libcurl4-openssl-dev
 
-      - name: Build .deb
+      - name: Build .deb (native)
+        if: matrix.image == ''
         env:
           TELEBIT_DEB_PACKAGE_SUFFIX: ${{ matrix.suffix }}
         run: bash scripts/build-deb.sh
+
+      # safe.directory is required because /src is bind-mounted from the runner
+      # and owned by a different uid than root inside the container — without it
+      # the `git describe` that build-deb.sh uses for versioning aborts.
+      - name: Build .deb in ${{ matrix.image }}
+        if: matrix.image != ''
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/src" \
+            -w /src \
+            -e "TELEBIT_DEB_PACKAGE_SUFFIX=${{ matrix.suffix }}" \
+            "${{ matrix.image }}" \
+            bash -lc '
+              set -euo pipefail
+              apt-get update -qq
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+                git ca-certificates build-essential cmake pkg-config libfcitx5core-dev libcurl4-openssl-dev
+              git config --global --add safe.directory /src
+              bash scripts/build-deb.sh
+            '
+          sudo chown -R "$(id -u):$(id -g)" telebit-fcitx5/build-deb
 
       - uses: actions/upload-artifact@v4
         with:
@@ -156,11 +186,11 @@ jobs:
           ref: gh-pages
           path: apt-repo
 
-      - name: Publish jammy + noble suites
+      - name: Publish jammy + noble + resolute suites
         if: steps.check.outputs.released == 'true'
         run: |
           set -euo pipefail
-          for suite in jammy noble; do
+          for suite in jammy noble resolute; do
             shopt -s nullglob
             debs=(release-debs/*"+${suite}"*.deb)
             shopt -u nullglob

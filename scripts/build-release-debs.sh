@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
-# Build two release .debs for GitHub Releases: jammy (22.04 libc/libstdc++) and noble (24.04).
+# Build the release .debs for GitHub Releases, one per supported Ubuntu suite:
+#   jammy    (22.04 libc/libstdc++) — built natively on the ubuntu-22.04 runner
+#   noble    (24.04)                — built in Docker
+#   resolute (26.04)                — built in Docker
+#
+# Only jammy is native because the CI job runs on ubuntu-22.04; every newer
+# suite is built in its own container so we never depend on a newer (or
+# preview-status) GitHub runner image just to get a matching libstdc++.
+#
 # Run on ubuntu-22.04 CI with Docker available. Usage: build-release-debs.sh <semver>
 set -euo pipefail
 
@@ -9,38 +17,11 @@ OUT="${ROOT}/release-debs"
 mkdir -p "${OUT}"
 rm -f "${OUT}"/*.deb
 
-build_native_jammy() {
-  export TELEBIT_DEB_PACKAGE_VERSION="${VERSION}+jammy"
-  unset TELEBIT_DEB_PACKAGE_SUFFIX || true
-  rm -rf "${ROOT}/telebit-fcitx5/build-deb"
-  bash "${ROOT}/scripts/build-deb.sh"
-  shopt -s nullglob
-  for f in "${ROOT}/telebit-fcitx5/build-deb"/*.deb; do
-    mv "$f" "${OUT}/"
-  done
-  shopt -u nullglob
-}
-
-build_native_jammy
-
-if ! command -v docker >/dev/null 2>&1; then
-  echo "ERROR: docker required to build noble .deb" >&2
-  exit 1
-fi
-
-rm -rf "${ROOT}/telebit-fcitx5/build-deb"
-docker run --rm \
-  -v "${ROOT}:/src" \
-  -w /src \
-  -e "TELEBIT_DEB_PACKAGE_VERSION=${VERSION}+noble" \
-  ubuntu:24.04 \
-  bash -lc '
-    set -euo pipefail
-    apt-get update -qq
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      git ca-certificates build-essential cmake pkg-config libfcitx5core-dev libcurl4-openssl-dev
-    bash scripts/build-deb.sh
-  '
+# Suites built in Docker, as "<suite>=<image>" — add a line here to ship another.
+DOCKER_SUITES=(
+  "noble=ubuntu:24.04"
+  "resolute=ubuntu:26.04"
+)
 
 # Docker runs as root; .deb files are root-owned on the host — plain mv fails for CI user (e.g. runner).
 move_deb_to_release() {
@@ -61,7 +42,50 @@ move_deb_to_release() {
   shopt -u nullglob
 }
 
-move_deb_to_release
+build_native_jammy() {
+  export TELEBIT_DEB_PACKAGE_VERSION="${VERSION}+jammy"
+  unset TELEBIT_DEB_PACKAGE_SUFFIX || true
+  rm -rf "${ROOT}/telebit-fcitx5/build-deb"
+  bash "${ROOT}/scripts/build-deb.sh"
+  shopt -s nullglob
+  for f in "${ROOT}/telebit-fcitx5/build-deb"/*.deb; do
+    mv "$f" "${OUT}/"
+  done
+  shopt -u nullglob
+}
+
+# build_in_docker <suite> <image>
+# Builds inside <image> so the .deb links against that release's libstdc++/libc,
+# then moves the result out before the next suite reuses the build dir.
+build_in_docker() {
+  local suite="$1" image="$2"
+  echo "==> Building ${suite} .deb in ${image} ..."
+  rm -rf "${ROOT}/telebit-fcitx5/build-deb"
+  docker run --rm \
+    -v "${ROOT}:/src" \
+    -w /src \
+    -e "TELEBIT_DEB_PACKAGE_VERSION=${VERSION}+${suite}" \
+    "${image}" \
+    bash -lc '
+      set -euo pipefail
+      apt-get update -qq
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        git ca-certificates build-essential cmake pkg-config libfcitx5core-dev libcurl4-openssl-dev
+      bash scripts/build-deb.sh
+    '
+  move_deb_to_release
+}
+
+build_native_jammy
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "ERROR: docker required to build the ${DOCKER_SUITES[*]%%=*} .deb(s)" >&2
+  exit 1
+fi
+
+for entry in "${DOCKER_SUITES[@]}"; do
+  build_in_docker "${entry%%=*}" "${entry#*=}"
+done
 
 echo "Release .deb artifacts:"
 ls -la "${OUT}"

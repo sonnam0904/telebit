@@ -10,7 +10,7 @@
 #   <repo_dir>/dists/<suite>/{Release,Release.gpg,InRelease}
 #   <repo_dir>/pubkey.gpg
 #
-# One "suite" per Ubuntu codename (jammy, noble, ...) keeps ABI-incompatible
+# One "suite" per Ubuntu codename (jammy, noble, resolute, ...) keeps ABI-incompatible
 # builds of telebit-fcitx5 from colliding: users pick the codename in their
 # sources.list entry, so only the matching binaries are ever visible to apt.
 set -euo pipefail
@@ -66,8 +66,9 @@ if [[ ! -f "${REPO_DIR}/index.html" ]]; then
 <meta charset="utf-8">
 <title>Telebit APT repository</title>
 <p>APT repository for <a href="https://github.com/sonnam0904/telebit">Telebit</a>.
-See the <a href="https://github.com/sonnam0904/telebit#3-c%C3%A0i-addon-telebit-fcitx5-cho-fcitx5">README</a>
-for setup instructions.</p>
+See the <a href="https://sonnam0904.github.io/telebit/getting-started/installation/">installation guide</a>
+for setup instructions. Suites: <code>jammy</code> (22.04), <code>noble</code> (24.04),
+<code>resolute</code> (26.04).</p>
 HTML
 fi
 
