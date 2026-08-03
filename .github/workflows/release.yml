@@ -96,13 +96,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential cmake pkg-config libfcitx5core-dev libcurl4-openssl-dev
 
+      # No `version:` here on purpose — action-setup reads the pnpm version from
+      # the "packageManager" field in package.json, so local and CI can't drift.
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
-      - run: npm run release
+      - run: pnpm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
