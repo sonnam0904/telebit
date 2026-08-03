@@ -65,9 +65,15 @@ build_in_docker() {
     -v "${ROOT}:/src" \
     -w /src \
     -e "TELEBIT_DEB_PACKAGE_VERSION=${VERSION}+${suite}" \
+    -e "HOST_UID=$(id -u)" \
+    -e "HOST_GID=$(id -g)" \
     "${image}" \
     bash -lc '
       set -euo pipefail
+      # /src is the host repo, and this container is root: every file the build
+      # writes lands on the host owned by root. Hand the build dir back on the way
+      # out, or the next suite gets "Permission denied" on its `rm -rf build-deb`.
+      trap "chown -R ${HOST_UID}:${HOST_GID} telebit-fcitx5/build-deb 2>/dev/null || true" EXIT
       apt-get update -qq
       DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         git ca-certificates build-essential cmake pkg-config libfcitx5core-dev libcurl4-openssl-dev
