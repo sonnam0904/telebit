@@ -1184,7 +1184,7 @@
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://sonnam0904.github.io/telebit/pubkey.gpg<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>gpg<span class="w"> </span>--dearmor<span class="w"> </span>-o<span class="w"> </span>/usr/share/keyrings/telebit-archive-keyring.gpg
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># 2. Thêm repo (jammy = Ubuntu 22.04, noble = 24.04)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># 2. Thêm repo (jammy = Ubuntu 22.04, noble = 24.04, resolute = 26.04)</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;deb [signed-by=/usr/share/keyrings/telebit-archive-keyring.gpg] https://sonnam0904.github.io/telebit </span><span class="k">$(</span>lsb_release<span class="w"> </span>-cs<span class="k">)</span><span class="s2"> main&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>/etc/apt/sources.list.d/telebit.list
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
@@ -1195,7 +1195,29 @@
 <p><code>telebit</code> là metapackage, chỉ phụ thuộc gói thật <strong><code>telebit-fcitx5</code></strong> — nên
 <code>sudo apt install telebit-fcitx5</code> cũng cho kết quả y hệt.</p>
 <div class="admonition info">
-<p class="admonition-title">Repo hiện hỗ trợ jammy và noble</p>
+<p class="admonition-title">Repo hỗ trợ jammy, noble và resolute</p>
+<table>
+<thead>
+<tr>
+<th>Suite</th>
+<th>Ubuntu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>jammy</code></td>
+<td>22.04 LTS</td>
+</tr>
+<tr>
+<td><code>noble</code></td>
+<td>24.04 LTS</td>
+</tr>
+<tr>
+<td><code>resolute</code></td>
+<td>26.04 LTS</td>
+</tr>
+</tbody>
+</table>
 <p>Nếu <code>lsb_release -cs</code> trả về codename khác (ví dụ <code>bookworm</code> của Debian), repo sẽ không có
 suite tương ứng. Khi đó dùng <a href="#deb"><code>.deb</code> tải tay</a> hoặc <a href="#cmake">CMake</a>.</p>
 </div>
@@ -1214,14 +1236,16 @@ suite tương ứng. Khi đó dùng <a href="#deb"><code>.deb</code> tải tay</
 <tbody>
 <tr>
 <td><strong>Releases</strong></td>
-<td><a href="https://github.com/sonnam0904/telebit/releases">Trang Releases</a> — mỗi tag có hai <code>.deb</code>, hậu tố <code>+jammy</code> (22.04) hoặc <code>+noble</code> (24.04)</td>
+<td><a href="https://github.com/sonnam0904/telebit/releases">Trang Releases</a> — mỗi tag có ba <code>.deb</code>, hậu tố <code>+jammy</code> (22.04), <code>+noble</code> (24.04) hoặc <code>+resolute</code> (26.04)</td>
 </tr>
 <tr>
 <td><strong>Artifacts</strong></td>
-<td><strong>Actions</strong> → <strong>Release</strong> → run mới nhất → <strong>Artifacts</strong> → <code>telebit-fcitx5-deb-jammy</code> / <code>-noble</code></td>
+<td><strong>Actions</strong> → <strong>Release</strong> → run mới nhất → <strong>Artifacts</strong> → <code>telebit-fcitx5-deb-jammy</code> / <code>-noble</code> / <code>-resolute</code></td>
 </tr>
 </tbody>
 </table>
+<p>Chọn đúng hậu tố cho phiên bản Ubuntu của bạn (<code>lsb_release -cs</code> để kiểm tra) — mỗi bản được
+build trên chính release đó nên liên kết với đúng <code>libstdc++</code>/<code>libc</code> tương ứng.</p>
 <p><strong>2. Cài</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>~/Downloads
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>sudo<span class="w"> </span>apt<span class="w"> </span>update
