@@ -1,3 +1,11 @@
+## [2.6.2](https://github.com/sonnam0904/telebit/compare/v2.6.1...v2.6.2) (2026-08-03)
+
+
+### Bug Fixes
+
+* adjust Docker build script to handle file permissions ([5b76409](https://github.com/sonnam0904/telebit/commit/5b76409414cd6b7f61b1ca3797fa162a42aea9f5))
+* update release configuration and documentation for Ubuntu 26.04 support ([1955698](https://github.com/sonnam0904/telebit/commit/19556983fddfd2d35f68b907548e240098bb5295))
+
 ## [2.6.1](https://github.com/sonnam0904/telebit/compare/v2.6.0...v2.6.1) (2026-07-31)
 
 
