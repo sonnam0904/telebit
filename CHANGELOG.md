@@ -1,3 +1,10 @@
+# [2.7.0](https://github.com/sonnam0904/telebit/compare/v2.6.2...v2.7.0) (2026-08-04)
+
+
+### Features
+
+* support for Anthropic Claude Messages API ([22e759e](https://github.com/sonnam0904/telebit/commit/22e759e0e3a07436f5a6aeee4be7d632c560f619))
+
 ## [2.6.2](https://github.com/sonnam0904/telebit/compare/v2.6.1...v2.6.2) (2026-08-03)
 
 
