@@ -10,14 +10,28 @@ Trong `fcitx5-configtool` → **Addons → telebit-fcitx5 → Configure**, bật
 
 ## Cấu hình bằng biến môi trường
 
+Telebit hỗ trợ **hai loại dịch vụ**: API kiểu **OpenAI** (`/v1/chat/completions`) và **Claude Messages API** của Anthropic (`/v1/messages`). Chỉ cần đặt key tương ứng, addon tự chọn đúng giao thức.
+
+> 📄 Bản mẫu đầy đủ kèm chú thích: [`.env.example`](https://github.com/sonnam0904/telebit/blob/main/.env.example) trong repo. Lưu ý file đó **không được nạp tự động** — nó chỉ là mẫu để bạn copy giá trị sang `/etc/environment`.
+
 | Biến | Bắt buộc | Mặc định | Ý nghĩa |
 |---|---|---|---|
-| `AI_API_KEY` | ✅ | (trống) | API key của dịch vụ AI (vd OpenAI `sk-...`). Không có key thì tính năng báo lỗi. |
-| `AI_ENDPOINT` | — | `https://api.openai.com/v1/chat/completions` | Địa chỉ API kiểu OpenAI chat/completions. Đổi để dùng Azure OpenAI, groq, hay bản chạy nội bộ. |
-| `AI_MODEL` | — | `gpt-4.1-mini` | Tên model. |
+| `AI_API_KEY` | ✅¹ | (trống) | API key của dịch vụ kiểu OpenAI (vd `sk-...`). |
+| `ANTHROPIC_API_KEY` | ✅¹ | (trống) | API key Anthropic (`sk-ant-...`) → dùng Claude Messages API. |
+| `CLAUDE_CODE_OAUTH_TOKEN` | ✅¹ | (trống) | Token OAuth của Claude Code → cũng dùng Claude Messages API (xem [phần dưới](#dung-claude-anthropic)). |
+| `AI_PROVIDER` | — | (tự nhận) | `openai` hoặc `anthropic` để **ép** giao thức. Bỏ trống thì addon tự chọn theo key đang có. |
+| `AI_ENDPOINT` | — | tuỳ provider² | Địa chỉ API. Đổi để dùng Azure OpenAI, groq, hay bản chạy nội bộ. |
+| `AI_MODEL` | — | `gpt-4.1-mini` / `claude-haiku-4-5`² | Tên model. |
 | `AI_SYSTEM_PROMPT` | — | (prompt tiếng Việt tự nhiên, súc tích) | Chỉ dẫn hệ thống cho AI. |
 | `AI_MAX_TOKENS` | — | `4096` | Số token tối đa cho phản hồi. |
-| `AI_TEMPERATURE` | — | `0.3` | Độ "sáng tạo" khi sinh văn bản. Thấp (vd `0.3`) → bám sát chỉ dẫn, ổn định, ít nhả rác — cần cho các model nhỏ chạy nội bộ. Cao (vd `0.7`–`1.0`) → sáng tạo hơn, hợp làm thơ/văn. |
+| `AI_TEMPERATURE` | — | `0.3` | Độ "sáng tạo" khi sinh văn bản. Thấp (vd `0.3`) → bám sát chỉ dẫn, ổn định, ít nhả rác — cần cho các model nhỏ chạy nội bộ. Cao (vd `0.7`–`1.0`) → sáng tạo hơn, hợp làm thơ/văn.  |
+
+¹ Cần **ít nhất một** trong ba key. Không có key nào thì tính năng báo lỗi. Khi đặt nhiều key:
+
+- Có `AI_API_KEY` và **không** đặt `AI_PROVIDER` → dùng OpenAI.
+- Đã chọn Claude (do `AI_PROVIDER=anthropic`, hoặc chỉ có key Claude) → ưu tiên `ANTHROPIC_API_KEY` → `CLAUDE_CODE_OAUTH_TOKEN` → `AI_API_KEY`.
+
+² OpenAI: `https://api.openai.com/v1/chat/completions` + `gpt-4.1-mini`. Anthropic: `https://api.anthropic.com/v1/messages` + `claude-haiku-4-5`.
 
 **Tại sao dùng biến môi trường thay vì lưu trong config?**
 File cấu hình của fcitx là **văn bản thô, không mã hoá** (`~/.config/fcitx5/conf/telebit-fcitx5.conf`). Nếu để API key ở đó, key dễ lọt vào bản sao lưu, git, ảnh chụp màn hình hay khi chia sẻ cấu hình. Đưa key vào biến môi trường tách bí mật ra khỏi file cấu hình.
@@ -25,22 +39,32 @@ File cấu hình của fcitx là **văn bản thô, không mã hoá** (`~/.confi
 **Cách đặt biến môi trường (toàn hệ thống, cho mọi phiên đăng nhập):**
 
 ```bash
-# Thêm vào /etc/environment (cần sudo). Chỉ AI_API_KEY là bắt buộc.
+# Thêm vào /etc/environment (cần sudo). Chọn MỘT trong hai dịch vụ:
+
+# (a) OpenAI hoặc dịch vụ tương thích OpenAI
 echo 'AI_API_KEY=sk-...' | sudo tee -a /etc/environment
 # (tuỳ chọn) nếu muốn đổi endpoint/model:
 echo 'AI_ENDPOINT=https://api.openai.com/v1/chat/completions' | sudo tee -a /etc/environment
 echo 'AI_MODEL=gpt-4.1-mini' | sudo tee -a /etc/environment
+
+# (b) Claude (Anthropic) — không cần đặt AI_ENDPOINT/AI_PROVIDER
+echo 'ANTHROPIC_API_KEY=sk-ant-...' | sudo tee -a /etc/environment
+echo 'AI_MODEL=claude-haiku-4-5' | sudo tee -a /etc/environment
 ```
 
-> ⚠️ **Phải ĐĂNG XUẤT rồi ĐĂNG NHẬP LẠI** (hoặc khởi động lại máy) sau khi sửa `/etc/environment`. fcitx5 khởi động theo phiên đăng nhập và chỉ đọc biến môi trường được nạp lúc login; nếu không đăng nhập lại, tiến trình fcitx5 sẽ không thấy `AI_API_KEY`.
+> ⚠️ **Phải ĐĂNG XUẤT rồi ĐĂNG NHẬP LẠI** (hoặc khởi động lại máy) sau khi sửa `/etc/environment`. fcitx5 khởi động theo phiên đăng nhập và chỉ đọc biến môi trường được nạp lúc login; nếu không đăng nhập lại, tiến trình fcitx5 sẽ không thấy key.
 
 Kiểm tra fcitx5 đã nhận biến chưa:
 
 ```bash
-tr '\0' '\n' < /proc/$(pgrep -x fcitx5)/environ | grep AI_API_KEY
+tr '\0' '\n' < /proc/$(pgrep -x fcitx5)/environ | grep -E 'AI_API_KEY|ANTHROPIC_API_KEY|CLAUDE_CODE_OAUTH_TOKEN'
 ```
 
-Phải thấy dòng `AI_API_KEY=...` có giá trị (không rỗng).
+Phải thấy dòng key tương ứng có giá trị (không rỗng).
+
+## Dùng Claude (Anthropic) {#dung-claude-anthropic}
+
+Khi phát hiện `ANTHROPIC_API_KEY` hoặc `CLAUDE_CODE_OAUTH_TOKEN` (và không có `AI_API_KEY`), addon chuyển sang **Claude Messages API**
 
 ## Cách dùng
 

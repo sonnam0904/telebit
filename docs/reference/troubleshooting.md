@@ -110,8 +110,9 @@ Cả hai đều đúng chính tả. Đổi quy ước bằng
 
 ## Trợ lý AI không phản hồi
 
-Xem phần cấu hình trong [Trợ lý AI](../ai-assistant.md) — cần `AI_API_KEY` trong biến môi
-trường, và biến môi trường phải nhìn thấy được từ tiến trình fcitx5 (đặt trong
+Xem phần cấu hình trong [Trợ lý AI](../ai-assistant.md) — cần một key trong biến môi
+trường (`AI_API_KEY` cho OpenAI, hoặc `ANTHROPIC_API_KEY` / `CLAUDE_CODE_OAUTH_TOKEN`
+cho Claude), và biến môi trường phải nhìn thấy được từ tiến trình fcitx5 (đặt trong
 `/etc/environment` rồi logout/login, không phải chỉ `export` trong terminal).
 
 Bật log để xem lỗi:
@@ -128,7 +129,6 @@ Rồi xem `journalctl --user -f` hoặc stderr của fcitx5.
     khi đang chẩn đoán, và đừng dán log lên chỗ công khai.
 
 ---
-
 ## Vẫn không xong?
 
 [Mở issue](https://github.com/sonnam0904/telebit/issues/new) kèm:

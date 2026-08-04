@@ -41,3 +41,8 @@ pnpm-debug.log*
 .venv/
 openwiki/
 .codegraph/
+
+# Bản .env đã điền API key thật (mẫu là .env.example, luôn được commit)
+.env
+.env.*
+!.env.example

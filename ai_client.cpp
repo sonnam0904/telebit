@@ -291,31 +291,10 @@ private:
     }
 };
 
-// Pull the assistant text out of an OpenAI chat/completions response:
+// OpenAI chat/completions response:
 //   { "choices": [ { "message": { "content": "..." } }, ... ] }
-// Returns false and fills `error` if the shape is unexpected or an API error
-// object is present.
-bool extractText(const std::string &body, std::string &text, std::string &error) {
-    JsonValue root;
-    JsonParser parser(body);
-    if (!parser.parse(root) || root.type != JsonValue::Type::Object) {
-        error = "Không phân tích được phản hồi JSON";
-        return false;
-    }
-
-    // API error envelope: { "error": { "message": "..." } }
-    if (const JsonValue *err = root.find("error")) {
-        if (err->type == JsonValue::Type::Object) {
-            if (const JsonValue *msg = err->find("message");
-                msg && msg->type == JsonValue::Type::String) {
-                error = msg->stringValue;
-                return false;
-            }
-        }
-        error = "Lỗi từ API";
-        return false;
-    }
-
+bool extractOpenAIText(const JsonValue &root, std::string &text,
+                       std::string &error) {
     const JsonValue *choices = root.find("choices");
     if (!choices || choices->type != JsonValue::Type::Array ||
         choices->arrayValue.empty()) {
@@ -337,6 +316,94 @@ bool extractText(const std::string &body, std::string &text, std::string &error)
     return true;
 }
 
+// Anthropic Messages API response:
+//   { "content": [ {"type":"thinking",…}, {"type":"text","text":"…"} ],
+//     "stop_reason": "end_turn" }
+// The text block is NOT necessarily first — thinking models emit one or more
+// thinking blocks ahead of it — so scan for the first "text" block instead of
+// indexing content[0].
+bool extractAnthropicText(const JsonValue &root, std::string &text,
+                          std::string &error) {
+    const JsonValue *content = root.find("content");
+    if (!content || content->type != JsonValue::Type::Array ||
+        content->arrayValue.empty()) {
+        error = "Phản hồi không có content";
+        return false;
+    }
+
+    for (const JsonValue &block : content->arrayValue) {
+        const JsonValue *type = block.find("type");
+        if (!type || type->type != JsonValue::Type::String ||
+            type->stringValue != "text") {
+            continue;
+        }
+        const JsonValue *value = block.find("text");
+        if (value && value->type == JsonValue::Type::String &&
+            !value->stringValue.empty()) {
+            text = value->stringValue;
+            return true;
+        }
+    }
+
+    // No usable text block. A refusal is the one case worth naming explicitly,
+    // otherwise the user just sees "empty response" for a deliberate decline.
+    if (const JsonValue *stop = root.find("stop_reason");
+        stop && stop->type == JsonValue::Type::String &&
+        stop->stringValue == "refusal") {
+        error = "Model đã từ chối yêu cầu này";
+        return false;
+    }
+
+    error = "Phản hồi rỗng";
+    return false;
+}
+
+// Pull the assistant text out of a provider response. Returns false and fills
+// `error` if the shape is unexpected or an API error object is present.
+bool extractText(Provider provider, const std::string &body, std::string &text,
+                 std::string &error, std::string &model) {
+    JsonValue root;
+    JsonParser parser(body);
+    if (!parser.parse(root) || root.type != JsonValue::Type::Object) {
+        error = "Không phân tích được phản hồi JSON";
+        return false;
+    }
+
+    // Read before the error check so a failed call still reports the model when
+    // the server named one.
+    if (const JsonValue *m = root.find("model");
+        m && m->type == JsonValue::Type::String) {
+        model = m->stringValue;
+    }
+
+    // Error envelope, identical in both APIs: { "error": { "message": "..." } }
+    if (const JsonValue *err = root.find("error")) {
+        if (err->type == JsonValue::Type::Object) {
+            if (const JsonValue *msg = err->find("message");
+                msg && msg->type == JsonValue::Type::String) {
+                error = msg->stringValue;
+                return false;
+            }
+        }
+        error = "Lỗi từ API";
+        return false;
+    }
+
+    return provider == Provider::Anthropic
+               ? extractAnthropicText(root, text, error)
+               : extractOpenAIText(root, text, error);
+}
+
+// Does this Claude model still accept `temperature`?
+//
+// The recent families (Opus 4.8/4.7, Sonnet 5/4.6, Fable 5) removed the
+// sampling parameters and answer any request carrying one with a 400; Haiku
+// still honours it. Deliberately an allow-list, not a deny-list: an unknown or
+// future model then degrades to "temperature ignored" rather than to a hard 400.
+bool anthropicAcceptsTemperature(const std::string &model) {
+    return model.find("haiku") != std::string::npos;
+}
+
 std::size_t writeCallback(char *ptr, std::size_t size, std::size_t nmemb,
                           void *userdata) {
     auto *buffer = static_cast<std::string *>(userdata);
@@ -354,23 +421,33 @@ AIResult ai_generate(const AIConfig &config, const std::string &prompt) {
         return result;
     }
 
-    // Build request body (OpenAI chat/completions):
-    //   {"model":..,"max_tokens":N,"messages":[{"role":"system",..},{"role":"user",..}]}
+    const bool anthropic = config.provider == Provider::Anthropic;
+
     std::string body;
     body += "{\"model\":\"" + jsonEscape(config.model) + "\",";
     body += "\"max_tokens\":" + std::to_string(config.maxTokens) + ",";
-    // Format the temperature with the classic ("C") locale: std::to_string /
-    // %f honour LC_NUMERIC, and under a locale like vi_VN that yields a comma
-    // decimal separator ("0,3"), producing invalid JSON that the server
-    // rejects with a 400. Force a dot regardless of the process locale.
-    {
+    if (!anthropic || anthropicAcceptsTemperature(config.model)) {
+        // Format the temperature with the classic ("C") locale: std::to_string
+        // / %f honour LC_NUMERIC, and under a locale like vi_VN that yields a
+        // comma decimal separator ("0,3"), producing invalid JSON that the
+        // server rejects with a 400. Force a dot regardless of the process
+        // locale.
         std::ostringstream tempStream;
         tempStream.imbue(std::locale::classic());
         tempStream << config.temperature;
         body += "\"temperature\":" + tempStream.str() + ",";
     }
+    if (!config.systemPrompt.empty() && anthropic) {
+        // Messages API: the system prompt is a top-level field, not a message
+        // with role "system" (that role does not exist there).
+        body += "\"system\":\"" + jsonEscape(config.systemPrompt) + "\",";
+    }
+    // No `thinking` field: adaptive thinking is off by default on Opus 4.8 and
+    // the extra latency would be felt inside an input method. Models where
+    // thinking is always on (Fable 5) still work — extractAnthropicText() skips
+    // the thinking blocks.
     body += "\"messages\":[";
-    if (!config.systemPrompt.empty()) {
+    if (!config.systemPrompt.empty() && !anthropic) {
         body += "{\"role\":\"system\",\"content\":\"" +
                 jsonEscape(config.systemPrompt) + "\"},";
     }
@@ -393,10 +470,33 @@ AIResult ai_generate(const AIConfig &config, const std::string &prompt) {
     std::string response;
     struct curl_slist *headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    std::string authHeader = "Authorization: Bearer " + config.apiKey;
+    // Keep the header strings alive until curl_easy_perform() returns:
+    // curl_slist_append() copies, but that is easy to forget when editing.
+    std::string authHeader;
+    if (anthropic) {
+        headers = curl_slist_append(
+            headers, (std::string("anthropic-version: ") + kAnthropicVersion)
+                         .c_str());
+        if (config.oauthToken) {
+            // OAuth access tokens authenticate as a bearer token and additionally
+            // require the oauth beta header. Sending one via x-api-key is a 401.
+            authHeader = "Authorization: Bearer " + config.apiKey;
+            headers =
+                curl_slist_append(headers, "anthropic-beta: oauth-2025-04-20");
+        } else {
+            authHeader = "x-api-key: " + config.apiKey;
+        }
+    } else {
+        authHeader = "Authorization: Bearer " + config.apiKey;
+    }
     headers = curl_slist_append(headers, authHeader.c_str());
 
-    curl_easy_setopt(curl, CURLOPT_URL, config.endpoint.c_str());
+    std::string endpoint = config.endpoint;
+    if (endpoint.empty()) {
+        endpoint = anthropic ? kAnthropicEndpoint : kOpenAIEndpoint;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, endpoint.c_str());
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE,
@@ -420,7 +520,7 @@ AIResult ai_generate(const AIConfig &config, const std::string &prompt) {
 
     std::string text;
     std::string error;
-    if (!extractText(response, text, error)) {
+    if (!extractText(config.provider, response, text, error, result.model)) {
         if (httpCode >= 400) {
             result.error = "HTTP " + std::to_string(httpCode) + ": " + error;
         } else {

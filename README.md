@@ -342,8 +342,16 @@ Nhấn <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd> ngay trong lúc gõ đ�
 2. Khai báo **biến môi trường** — API key, endpoint, model… Không có tham số nào lưu trong file config, để tránh rò rỉ key:
 
    ```bash
-   AI_API_KEY  AI_ENDPOINT  AI_MODEL  AI_SYSTEM_PROMPT  AI_MAX_TOKENS
+   # Chọn một dịch vụ: OpenAI (hoặc API tương thích) …
+   AI_API_KEY
+   # … hoặc Claude (Anthropic)
+   ANTHROPIC_API_KEY   CLAUDE_CODE_OAUTH_TOKEN
+
+   # Tuỳ chọn
+   AI_PROVIDER  AI_ENDPOINT  AI_MODEL  AI_SYSTEM_PROMPT  AI_MAX_TOKENS
    ```
+
+   Xem [`.env.example`](.env.example) để biết ý nghĩa từng biến. File đó là **bản mẫu**, không được nạp tự động — hãy copy giá trị sang `/etc/environment` rồi logout/login.
 
 Bạn cũng có thể tạo sẵn **skill** (`/tên-skill`) để tái dùng các hướng dẫn hay lặp lại.
 

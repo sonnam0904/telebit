@@ -912,11 +912,68 @@ void TelebitFcitx5Engine::dispatchAiRequest(InputContext *ic,
     // All AI settings come from environment variables (nothing is stored in
     // the fcitx config). Sensible defaults apply when a var is unset.
     telebit::ai::AIConfig cfg;
-    cfg.endpoint = envOr("AI_ENDPOINT", "https://api.openai.com/v1/chat/completions");
-    cfg.model = envOr("AI_MODEL", "gpt-4.1-mini");
-    if (const char *k = std::getenv("AI_API_KEY")) {
-        cfg.apiKey = k;
+
+    // Two providers are supported. AI_PROVIDER pins the choice explicitly
+    // ("openai" | "anthropic"); when unset it follows whichever credential the
+    // environment offers, and AI_API_KEY wins so existing OpenAI setups keep
+    // behaving exactly as before.
+    const std::string provider = envOr("AI_PROVIDER", "");
+    const char *aiKey = std::getenv("AI_API_KEY");
+    const char *anthropicKey = std::getenv("ANTHROPIC_API_KEY");
+    const char *claudeOauth = std::getenv("CLAUDE_CODE_OAUTH_TOKEN");
+    const bool hasAiKey = aiKey && aiKey[0] != '\0';
+    const bool hasAnthropicKey = anthropicKey && anthropicKey[0] != '\0';
+    const bool hasClaudeOauth = claudeOauth && claudeOauth[0] != '\0';
+
+    bool useAnthropic = (provider == "anthropic" || provider == "claude");
+    if (provider.empty()) {
+        useAnthropic = !hasAiKey && (hasAnthropicKey || hasClaudeOauth);
     }
+
+    if (useAnthropic) {
+        cfg.provider = telebit::ai::Provider::Anthropic;
+        cfg.endpoint = envOr("AI_ENDPOINT", telebit::ai::kAnthropicEndpoint);
+        // Haiku by default: an input method needs the answer to land in a
+        // keystroke or two, and the tasks here (dịch, tóm tắt, sửa câu) are
+        // short rewrites. Set AI_MODEL=claude-opus-4-8 for harder prompts.
+        cfg.model = envOr("AI_MODEL", "claude-haiku-4-5");
+        // Anthropic-specific credentials come FIRST: reaching this branch means
+        // either only a Claude credential exists, or AI_PROVIDER pinned
+        // anthropic — and in both cases a leftover AI_API_KEY (typically an
+        // OpenAI sk-proj-… key) is the least likely thing the user meant. Prefer
+        // a real API key over the OAuth token: it is scoped to the API and
+        // travels in x-api-key, whereas CLAUDE_CODE_OAUTH_TOKEN is a Claude Code
+        // credential needing the OAuth bearer + beta header, so flag that one.
+        if (hasAnthropicKey) {
+            cfg.apiKey = anthropicKey;
+        } else if (hasClaudeOauth) {
+            cfg.apiKey = claudeOauth;
+            cfg.oauthToken = true;
+        } else if (hasAiKey) {
+            cfg.apiKey = aiKey;
+        }
+    } else {
+        cfg.provider = telebit::ai::Provider::OpenAI;
+        cfg.endpoint = envOr("AI_ENDPOINT", telebit::ai::kOpenAIEndpoint);
+        cfg.model = envOr("AI_MODEL", "gpt-4.1-mini");
+        if (hasAiKey) {
+            cfg.apiKey = aiKey;
+        }
+    }
+    // A stale AI_ENDPOINT is an easy trap: switching AI_PROVIDER without also
+    // clearing the old URL posts an Anthropic-shaped body to OpenAI (or the
+    // reverse), and the server answers with a baffling "model does not exist"
+    // 404 rather than anything about the mismatch. If the endpoint is literally
+    // the OTHER provider's default, treat it as unset. A genuinely custom URL
+    // (proxy, Azure, local runner) is left alone.
+    if (cfg.endpoint == (useAnthropic ? telebit::ai::kOpenAIEndpoint
+                                      : telebit::ai::kAnthropicEndpoint)) {
+        cfg.endpoint = useAnthropic ? telebit::ai::kAnthropicEndpoint
+                                    : telebit::ai::kOpenAIEndpoint;
+        TELEBIT_AI_LOG("ignoring stale AI_ENDPOINT for provider=%s",
+                       useAnthropic ? "anthropic" : "openai");
+    }
+
     cfg.systemPrompt = envOr("AI_SYSTEM_PROMPT", kDefaultAiSystemPrompt);
     if (const char *mt = std::getenv("AI_MAX_TOKENS"); mt && mt[0] != '\0') {
         int parsed = std::atoi(mt);
@@ -994,9 +1051,12 @@ void TelebitFcitx5Engine::dispatchAiRequest(InputContext *ic,
     updateAiPreedit(ic, state);
     startAiSpinner(ic);  // animate the [AI...] ellipsis while we wait
 
-    TELEBIT_AI_LOG("dispatch: prompt=\"%s\" endpoint=%s model=%s keyLen=%zu seq=%llu",
-                   prompt.c_str(), cfg.endpoint.c_str(), cfg.model.c_str(),
-                   cfg.apiKey.size(), (unsigned long long)seq);
+    TELEBIT_AI_LOG("dispatch: prompt=\"%s\" provider=%s auth=%s endpoint=%s "
+                   "model=%s keyLen=%zu seq=%llu",
+                   prompt.c_str(), useAnthropic ? "anthropic" : "openai",
+                   cfg.oauthToken ? "oauth" : "key", cfg.endpoint.c_str(),
+                   cfg.model.c_str(), cfg.apiKey.size(),
+                   (unsigned long long)seq);
 
     auto alive = aiAlive_;
     auto dispatcher = aiDispatcher_;
@@ -1008,8 +1068,13 @@ void TelebitFcitx5Engine::dispatchAiRequest(InputContext *ic,
     std::thread([self, alive, dispatcher, icRef, seq, cfg, prompt]() mutable {
         TELEBIT_AI_LOG("worker: calling ai_generate...");
         telebit::ai::AIResult result = telebit::ai::ai_generate(cfg, prompt);
-        TELEBIT_AI_LOG("worker: ai_generate returned ok=%d err=\"%s\" textLen=%zu",
-                       result.ok ? 1 : 0, result.error.c_str(), result.text.size());
+        // servedModel is what the API says answered, not what the model claims
+        // about itself when asked — the latter is unreliable.
+        TELEBIT_AI_LOG("worker: ai_generate returned ok=%d err=\"%s\" "
+                       "servedModel=%s textLen=%zu",
+                       result.ok ? 1 : 0, result.error.c_str(),
+                       result.model.empty() ? "(none)" : result.model.c_str(),
+                       result.text.size());
         if (!dispatcher) {
             return;
         }

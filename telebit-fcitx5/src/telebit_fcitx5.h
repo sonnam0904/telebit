@@ -175,9 +175,10 @@ private:
         };
 
         // Trợ lý AI. Mọi tham số (API key, endpoint, model, system prompt,
-        // max tokens) đều lấy từ BIẾN MÔI TRƯỜNG (AI_API_KEY, AI_ENDPOINT,
-        // AI_MODEL, AI_SYSTEM_PROMPT, AI_MAX_TOKENS) — không lưu trong config
-        // này để tránh rò rỉ key. Phím mở ô nhập cố định là Ctrl+Shift+Space.
+        // max tokens) đều lấy từ BIẾN MÔI TRƯỜNG (AI_API_KEY, ANTHROPIC_API_KEY,
+        // CLAUDE_CODE_OAUTH_TOKEN, AI_PROVIDER, AI_ENDPOINT, AI_MODEL,
+        // AI_SYSTEM_PROMPT, AI_MAX_TOKENS) — không lưu trong config này để
+        // tránh rò rỉ key. Phím mở ô nhập cố định là Ctrl+Shift+Space.
         fcitx::Option<bool, fcitx::NoConstrain<bool>,
                       fcitx::DefaultMarshaller<bool>, fcitx::ToolTipAnnotation>
             aiEnabled{
@@ -189,8 +190,10 @@ private:
                 fcitx::NoConstrain<bool>(),
                 fcitx::DefaultMarshaller<bool>(),
                 fcitx::ToolTipAnnotation(
-                    "Cấu hình qua biến môi trường: AI_API_KEY, AI_ENDPOINT, "
-                    "AI_MODEL, AI_SYSTEM_PROMPT, AI_MAX_TOKENS. \n Hướng dẫn: "
+                    "Cấu hình qua biến môi trường: AI_API_KEY (OpenAI) hoặc "
+                    "ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN (Claude), "
+                    "AI_PROVIDER, AI_ENDPOINT, AI_MODEL, AI_SYSTEM_PROMPT, "
+                    "AI_MAX_TOKENS. \n Hướng dẫn: "
                     "https://github.com/sonnam0904/telebit/blob/main/docs/ai-assistant.md")};
 
         fcitx::KeyListOption aiTriggerKey{
