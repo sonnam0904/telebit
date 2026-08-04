@@ -1237,8 +1237,9 @@ là chữ số nên không bao giờ va vào chữ cái.</p>
 <a href="../../guide/configuration/#modern-tone">ModernToneStyle</a>.</p>
 <hr />
 <h2 id="tro-ly-ai-khong-phan-hoi">Trợ lý AI không phản hồi<a class="headerlink" href="#tro-ly-ai-khong-phan-hoi" title="Permanent link">&para;</a></h2>
-<p>Xem phần cấu hình trong <a href="../../ai-assistant/">Trợ lý AI</a> — cần <code>AI_API_KEY</code> trong biến môi
-trường, và biến môi trường phải nhìn thấy được từ tiến trình fcitx5 (đặt trong
+<p>Xem phần cấu hình trong <a href="../../ai-assistant/">Trợ lý AI</a> — cần một key trong biến môi
+trường (<code>AI_API_KEY</code> cho OpenAI, hoặc <code>ANTHROPIC_API_KEY</code> / <code>CLAUDE_CODE_OAUTH_TOKEN</code>
+cho Claude), và biến môi trường phải nhìn thấy được từ tiến trình fcitx5 (đặt trong
 <code>/etc/environment</code> rồi logout/login, không phải chỉ <code>export</code> trong terminal).</p>
 <p>Bật log để xem lỗi:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">TELEBIT_AI_DEBUG</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>fcitx5<span class="w"> </span>-r
