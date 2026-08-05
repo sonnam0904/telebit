@@ -1,3 +1,10 @@
+# [2.8.0](https://github.com/sonnam0904/telebit/compare/v2.7.0...v2.8.0) (2026-08-05)
+
+
+### Features
+
+* **packaging:** select fcitx5 session-wide via environment.d drop-in ([ec8e3e2](https://github.com/sonnam0904/telebit/commit/ec8e3e2a3d8fb3fc3fde4245e8ff0f191e9b7a11))
+
 # [2.7.0](https://github.com/sonnam0904/telebit/compare/v2.6.2...v2.7.0) (2026-08-04)
 
 
