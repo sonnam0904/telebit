@@ -1158,8 +1158,11 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>sudo<span class="w"> </span>rm<span class="w"> </span>-f<span class="w"> </span>/usr/lib/fcitx5/telebit-fcitx5.so<span class="w"> </span>/usr/lib/*/fcitx5/telebit-fcitx5.so
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>sudo<span class="w"> </span>rm<span class="w"> </span>-f<span class="w"> </span>/usr/share/fcitx5/addon/telebit-fcitx5.conf
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>sudo<span class="w"> </span>rm<span class="w"> </span>-f<span class="w"> </span>/usr/share/fcitx5/inputmethod/telebit-fcitx5.conf
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>fcitx5<span class="w"> </span>-r
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>sudo<span class="w"> </span>rm<span class="w"> </span>-f<span class="w"> </span>/usr/lib/environment.d/60-telebit-fcitx5.conf
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>fcitx5<span class="w"> </span>-r
 </code></pre></div>
+<p><code>install.sh</code> không tự gỡ được nên phải xoá tay cả drop-in cuối; gói <code>.deb</code>/<code>.rpm</code> thì
+dpkg/rpm xoá giúp. Biến môi trường vẫn còn trong session hiện tại cho tới lần login sau.</p>
 <div class="admonition note">
 <p class="admonition-title">Vì sao có hai đường dẫn <code>.so</code></p>
 <p>Ubuntu/Debian đặt addon trong thư mục theo kiến trúc
@@ -1170,7 +1173,8 @@ Glob <code>/usr/lib/*/fcitx5/</code> khớp trường hợp đầu, nên lệnh 
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>rm<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/lib/fcitx5/telebit-fcitx5.so&quot;</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>rm<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/share/fcitx5/addon/telebit-fcitx5.conf&quot;</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>rm<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/share/fcitx5/inputmethod/telebit-fcitx5.conf&quot;</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>fcitx5<span class="w"> </span>-r
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>rm<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.config/environment.d/60-telebit-fcitx5.conf&quot;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>fcitx5<span class="w"> </span>-r
 </code></pre></div>
 <hr />
 <h2 id="xoa-cau-hinh-con-sot-tuy-chon">Xoá cấu hình còn sót (tuỳ chọn)<a class="headerlink" href="#xoa-cau-hinh-con-sot-tuy-chon" title="Permanent link">&para;</a></h2>
