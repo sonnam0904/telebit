@@ -5,34 +5,30 @@ và **thêm Telebit vào danh sách input method**.
 
 ## Bước 1 — Đặt fcitx5 làm input method của session
 
-Bỏ qua bước này nếu bạn đã dùng fcitx5 cho ngôn ngữ khác.
+**Telebit đã làm sẵn bước này.** Gói cài một drop-in
+`/usr/lib/environment.d/60-telebit-fcitx5.conf` (bản `install.sh --user` thì đặt ở
+`~/.config/environment.d/`) khai báo:
 
-!!! warning "Nếu bỏ qua bước này"
+```ini
+GTK_IM_MODULE=fcitx
+QT_IM_MODULE=fcitx
+XMODIFIERS=@im=fcitx
+```
 
-    Addon vẫn cài thành công nhưng **không có tác dụng gì** — ứng dụng vẫn nói chuyện với IBus
-    hoặc input method khác, phím của bạn không đi qua Telebit.
-
-=== "Ubuntu/Debian"
-
-    ```bash
-    im-config -n fcitx5
-    ```
-
-=== "Cấu hình tay (GNOME/KDE)"
-
-    Thêm vào `~/.profile`, `~/.xprofile` hoặc file env của desktop:
-
-    ```bash
-    export GTK_IM_MODULE=fcitx
-    export QT_IM_MODULE=fcitx
-    export XMODIFIERS=@im=fcitx
-    ```
-
-Sau đó **logout/login** (hoặc reboot), rồi kiểm tra fcitx5 đang chạy:
+systemd đọc file này lúc khởi tạo user session, nên **phải logout/login** (hoặc reboot)
+thì mới có tác dụng. Kiểm tra sau khi login lại:
 
 ```bash
+echo "$GTK_IM_MODULE $QT_IM_MODULE $XMODIFIERS"   # -> fcitx fcitx @im=fcitx
 fcitx5 -d
 ```
+
+!!! warning "Nếu biến vẫn trống sau khi login lại"
+
+    Session của bạn có thể không chạy qua systemd user manager, hoặc `/etc/environment`
+    đang đè lên (file `99-environment.conf` sắp sau `60-…` nên thắng). Khi đó dùng cách
+    truyền thống: `im-config -n fcitx5` trên Ubuntu/Debian, hoặc `export` ba biến trên
+    trong `~/.profile` / `~/.xprofile`.
 
 ## Bước 2 — Thêm Telebit vào danh sách input method
 

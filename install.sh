@@ -55,8 +55,19 @@ if [[ "$MODE" != "system" ]]; then
   rm -f "${HOME}/.cache/icon-cache.kcache" 2>/dev/null || true
 fi
 
+if [[ "$MODE" == "system" ]]; then
+  ENVD_FILE="${PREFIX}/lib/environment.d/60-telebit-fcitx5.conf"
+else
+  ENVD_FILE="${HOME}/.config/environment.d/60-telebit-fcitx5.conf"
+fi
+
 echo
 echo "Done."
 echo "- Add input method 'telebit-fcitx5' in fcitx5-configtool (Input Method -> Add -> Telebit / telebit-fcitx5)."
 echo "- Then restart fcitx5: fcitx5 -r"
+echo
+echo "Installed ${ENVD_FILE}: it points GTK_IM_MODULE / QT_IM_MODULE / XMODIFIERS at"
+echo "fcitx5 for the whole graphical session, Flatpak apps included."
+echo "- Log out and back in for it to take effect (systemd reads environment.d at session start)."
+echo "- To opt out: sudo ln -s /dev/null /etc/environment.d/60-telebit-fcitx5.conf"
 

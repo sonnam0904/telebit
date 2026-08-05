@@ -1,0 +1,20 @@
+#!/bin/sh
+# Purely informational: the environment.d drop-in needs no activation, but it
+# only takes effect at the next login, so say so or people will think it failed.
+set -e
+
+case "$1" in
+  configure)
+    cat <<'EOF'
+
+Telebit: đã đặt fcitx5 làm input method của session
+  (/usr/lib/environment.d/60-telebit-fcitx5.conf)
+
+  1. Logout / login để áp dụng — bao gồm cả các ứng dụng Flatpak.
+  2. Thêm Telebit: fcitx5-configtool -> Input Method -> Add -> telebit-fcitx5
+
+EOF
+    ;;
+esac
+
+exit 0

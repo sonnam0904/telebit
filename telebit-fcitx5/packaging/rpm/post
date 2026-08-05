@@ -1,0 +1,12 @@
+# RPM post-install scriptlet. Same message as the Debian postinst, minus dpkg's
+# "configure" argument convention — rpm passes an install count in $1.
+cat <<'EOF'
+
+Telebit: đã đặt fcitx5 làm input method của session
+  (/usr/lib/environment.d/60-telebit-fcitx5.conf)
+
+  1. Logout / login để áp dụng — bao gồm cả các ứng dụng Flatpak.
+  2. Thêm Telebit: fcitx5-configtool -> Input Method -> Add -> telebit-fcitx5
+
+EOF
+exit 0

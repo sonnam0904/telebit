@@ -30,8 +30,12 @@ fcitx5 -r
 sudo rm -f /usr/lib/fcitx5/telebit-fcitx5.so /usr/lib/*/fcitx5/telebit-fcitx5.so
 sudo rm -f /usr/share/fcitx5/addon/telebit-fcitx5.conf
 sudo rm -f /usr/share/fcitx5/inputmethod/telebit-fcitx5.conf
+sudo rm -f /usr/lib/environment.d/60-telebit-fcitx5.conf
 fcitx5 -r
 ```
+
+`install.sh` không tự gỡ được nên phải xoá tay cả drop-in cuối; gói `.deb`/`.rpm` thì
+dpkg/rpm xoá giúp. Biến môi trường vẫn còn trong session hiện tại cho tới lần login sau.
 
 !!! note "Vì sao có hai đường dẫn `.so`"
 
@@ -45,6 +49,7 @@ fcitx5 -r
 rm -f "$HOME/.local/lib/fcitx5/telebit-fcitx5.so"
 rm -f "$HOME/.local/share/fcitx5/addon/telebit-fcitx5.conf"
 rm -f "$HOME/.local/share/fcitx5/inputmethod/telebit-fcitx5.conf"
+rm -f "$HOME/.config/environment.d/60-telebit-fcitx5.conf"
 fcitx5 -r
 ```
 
