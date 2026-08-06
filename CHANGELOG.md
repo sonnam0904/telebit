@@ -1,3 +1,10 @@
+## [2.8.1](https://github.com/sonnam0904/telebit/compare/v2.8.0...v2.8.1) (2026-08-06)
+
+
+### Bug Fixes
+
+* **cmake:** Added safeguards in the configuration saving process to prevent silent data loss during writes. ([31fea3b](https://github.com/sonnam0904/telebit/commit/31fea3babf9d7b74d552bc4559f7711805551a9f))
+
 # [2.8.0](https://github.com/sonnam0904/telebit/compare/v2.7.0...v2.8.0) (2026-08-05)
 
 
