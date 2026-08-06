@@ -1,7 +1,7 @@
 [Addon]
 Name=telebit-fcitx5
 Category=InputMethod
-Version=@PROJECT_VERSION@
+Version=@TELEBIT_ADDON_VERSION@
 Library=telebit-fcitx5
 Type=SharedLibrary
 OnDemand=True

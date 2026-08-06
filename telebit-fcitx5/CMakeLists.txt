@@ -11,6 +11,49 @@ find_package(Fcitx5Core REQUIRED)
 
 include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
 
+# One version for every artifact, resolved BEFORE add_subdirectory(src) because
+# the addon .conf is configured in there. The release tag is the source of truth
+# and arrives through the environment (scripts/build-deb.sh, build-rpm.sh); a
+# plain from-source build has no such variable, so fall back to the newest tag
+# before falling back to PROJECT_VERSION. That fallback is not cosmetic: an
+# install.sh user has no package database to query, which makes the addon's own
+# Version field the only way they can tell what they are running.
+if(DEFINED ENV{TELEBIT_PACKAGE_VERSION} AND NOT "$ENV{TELEBIT_PACKAGE_VERSION}" STREQUAL "")
+  set(_telebit_pkg_ver "$ENV{TELEBIT_PACKAGE_VERSION}")
+elseif(DEFINED ENV{TELEBIT_DEB_PACKAGE_VERSION} AND NOT "$ENV{TELEBIT_DEB_PACKAGE_VERSION}" STREQUAL "")
+  set(_telebit_pkg_ver "$ENV{TELEBIT_DEB_PACKAGE_VERSION}")
+else()
+  set(_telebit_pkg_ver "${PROJECT_VERSION}")
+  find_package(Git QUIET)
+  if(Git_FOUND)
+    # Released tarballs carry no .git; ERROR_QUIET + the return code keep that
+    # case silent instead of noisy.
+    execute_process(
+      COMMAND "${GIT_EXECUTABLE}" describe --tags --abbrev=0
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      OUTPUT_VARIABLE _telebit_git_tag
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET
+      RESULT_VARIABLE _telebit_git_rc)
+    if(_telebit_git_rc EQUAL 0 AND
+       _telebit_git_tag MATCHES "^v?([0-9]+\\.[0-9]+\\.[0-9]+)")
+      set(_telebit_pkg_ver "${CMAKE_MATCH_1}")
+    endif()
+  endif()
+endif()
+
+# fcitx5 reads the addon's Version field through SemanticVersion::parse and
+# silently substitutes its default — 0.1.0 — when parsing fails. The packaging
+# suffixes are not uniformly semver: "+noble" is valid build metadata, but
+# build-rpm.sh rewrites '+' and '-' to '~', which is not. Hand it only the
+# MAJOR.MINOR.PATCH core so the field can never quietly become a lie.
+if(_telebit_pkg_ver MATCHES "^v?([0-9]+\\.[0-9]+\\.[0-9]+)")
+  set(TELEBIT_ADDON_VERSION "${CMAKE_MATCH_1}")
+else()
+  set(TELEBIT_ADDON_VERSION "${PROJECT_VERSION}")
+endif()
+message(STATUS "Telebit version: package=${_telebit_pkg_ver} addon=${TELEBIT_ADDON_VERSION}")
+
 add_subdirectory(src)
 
 # systemd user-manager environment drop-in: sets GTK_IM_MODULE/QT_IM_MODULE/
@@ -47,14 +90,6 @@ if(TELEBIT_INSTALL_ENVIRONMENTD AND NOT _telebit_envd STREQUAL "")
 elseif(TELEBIT_INSTALL_ENVIRONMENTD)
   message(WARNING "No environment.d destination for prefix '${CMAKE_INSTALL_PREFIX}' and no HOME; "
                   "skipping the drop-in. fcitx5 must then be selected by hand (im-config -n fcitx5).")
-endif()
-
-if(DEFINED ENV{TELEBIT_PACKAGE_VERSION} AND NOT "$ENV{TELEBIT_PACKAGE_VERSION}" STREQUAL "")
-  set(_telebit_pkg_ver "$ENV{TELEBIT_PACKAGE_VERSION}")
-elseif(DEFINED ENV{TELEBIT_DEB_PACKAGE_VERSION} AND NOT "$ENV{TELEBIT_DEB_PACKAGE_VERSION}" STREQUAL "")
-  set(_telebit_pkg_ver "$ENV{TELEBIT_DEB_PACKAGE_VERSION}")
-else()
-  set(_telebit_pkg_ver "${PROJECT_VERSION}")
 endif()
 
 set(CPACK_GENERATOR "DEB")

@@ -360,14 +360,23 @@ void TelebitFcitx5Engine::recordSeenProgram(const std::string &program) {
         forcePreeditEnabledLower_.insert(programLower);
     }
     configDirty_ = true;
+    // Flush now rather than waiting for getConfig() or the destructor: the
+    // entry is what makes the app show up in the configtool list, and a session
+    // that dies without unwinding would otherwise lose it. The preedit decision
+    // itself does not depend on this write — it is derived from the name above
+    // and already mirrored into forcePreeditEnabledLower_.
+    saveConfigIfDirty();
 }
 
 void TelebitFcitx5Engine::saveConfigIfDirty() {
     if (!configDirty_) {
         return;
     }
-    safeSaveAsIni(config_, configFile);
-    configDirty_ = false;
+    // Keep the dirty flag set if the write failed, so the next flush retries
+    // instead of silently dropping every entry discovered since.
+    if (safeSaveAsIni(config_, configFile)) {
+        configDirty_ = false;
+    }
 }
 
 TelebitInputState *TelebitFcitx5Engine::stateFor(InputContext *ic) const {
@@ -511,10 +520,16 @@ void TelebitFcitx5Engine::keyEvent(const InputMethodEntry &entry, KeyEvent &keyE
 
     bool useDirectRollback = config_.directCommitRollback.value();
 
-    const std::string &program = ic->program();
     if (useDirectRollback) {
-        const std::string programLower = toLowerAscii(program);
-        if (!programLower.empty() &&
+        const std::string programLower = toLowerAscii(ic->program());
+        // An empty name means the client reached fcitx through a frontend that
+        // carries no application id — the raw Wayland text-input protocol,
+        // where Chrome and most Electron apps land. ForcePreeditApps can never
+        // match those, so the browsers isDefaultPreeditProgram() exists to
+        // protect would silently get direct commit anyway. A client we cannot
+        // identify is also one whose quirks we cannot know, so it defaults to
+        // the safe path rather than the fast one.
+        if (programLower.empty() ||
             forcePreeditEnabledLower_.count(programLower)) {
             useDirectRollback = false;
         }
