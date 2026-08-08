@@ -481,6 +481,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../getting-started/install-with-ai-agent/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cài bằng AI agent
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../getting-started/first-use/" class="md-nav__link">
         
   
@@ -811,6 +832,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/doctor/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lệnh telebit doctor
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/uninstall/" class="md-nav__link">
         
   
@@ -969,6 +1011,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#build-va-test-cli-telebit-doctor" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build và test CLI telebit doctor
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Build và test CLI telebit doctor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vi-sao-code-cli-chia-lam-ba-tang" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vì sao code CLI chia làm ba tầng
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#viet-them-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      Viết thêm test
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#viet-test" class="md-nav__link">
     <span class="md-ellipsis">
       Viết test
@@ -1095,6 +1170,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#build-va-test-cli-telebit-doctor" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build và test CLI telebit doctor
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Build và test CLI telebit doctor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vi-sao-code-cli-chia-lam-ba-tang" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vì sao code CLI chia làm ba tầng
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#viet-them-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      Viết thêm test
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#viet-test" class="md-nav__link">
     <span class="md-ellipsis">
       Viết test
@@ -1160,10 +1268,27 @@
 <h1 id="build-test">Build &amp; test<a class="headerlink" href="#build-test" title="Permanent link">&para;</a></h1>
 <p>Core C++ build được <strong>không cần fcitx5</strong> — hữu ích khi bạn chỉ muốn làm việc với bộ chuyển đổi.</p>
 <h2 id="yeu-cau">Yêu cầu<a class="headerlink" href="#yeu-cau" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Compiler hỗ trợ <strong>C++17</strong></li>
-<li><strong>CMake ≥ 3.10</strong></li>
-</ul>
+<p>Toàn repo dùng chung một mức tối thiểu: compiler <strong>C++17</strong> và <strong>CMake ≥ 3.21</strong>.</p>
+<p>Repo có <strong>hai</strong> project CMake tách rời, khác nhau ở dependency chứ không ở CMake:</p>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Cần thêm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Core (<code>./</code>) — engine + <code>telebit_telex_tests</code></td>
+<td>không gì cả</td>
+</tr>
+<tr>
+<td><code>telebit-fcitx5/</code> — addon + CLI <code>telebit</code></td>
+<td>header fcitx5, libcurl, extra-cmake-modules</td>
+</tr>
+</tbody>
+</table>
+<p>Phần dưới đây cài dependency cho <strong>core</strong>:</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Ubuntu/Debian</label><label for="__tabbed_1_2">Fedora</label><label for="__tabbed_1_3">Arch</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -1205,13 +1330,75 @@ nào.</p>
 <p>Bộ test vẫn kiểm tra thật ở mọi build type: <code>tests.cpp</code> chủ động <code>#undef NDEBUG</code> trước khi
 include <code>&lt;cassert&gt;</code>, nên <code>assert</code> không bị compile bỏ.</p>
 </div>
+<h2 id="build-va-test-cli-telebit-doctor">Build và test CLI <code>telebit doctor</code><a class="headerlink" href="#build-va-test-cli-telebit-doctor" title="Permanent link">&para;</a></h2>
+<p>CLI nằm trong project <code>telebit-fcitx5/</code>, không phải project core, nên build riêng:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>telebit-fcitx5
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>cmake<span class="w"> </span>-B<span class="w"> </span>build<span class="w"> </span>.
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>./build/cli/telebit_doctor_tests
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Bước này cần dependency của addon, dù CLI không dùng tới</p>
+<p><code>cli/CMakeLists.txt</code> cố tình không link gì từ fcitx5 — nhưng <code>cmake -B build .</code> ở đây
+configure <strong>cả project</strong>, gồm cả target addon, nên vẫn đòi <code>Fcitx5Core</code>, <code>CURL</code> và
+<code>extra-cmake-modules</code>. Chỉ cài <code>build-essential cmake</code> như phần core là configure sẽ
+fail. Cài đủ theo <a href="../../getting-started/installation/#cmake">Cài đặt → CMake</a> trước.</p>
+</div>
+<p>Build xong có luôn binary chạy được tại <code>build/cli/telebit</code> (target tên <code>telebit_cli</code>
+nhưng <code>OUTPUT_NAME</code> là <code>telebit</code>), tiện để thử mà không cần cài đè lên máy:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>./build/cli/telebit<span class="w"> </span>doctor
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>./build/cli/telebit<span class="w"> </span>doctor<span class="w"> </span>--markdown
+</code></pre></div>
+<p>Hoặc qua ctest:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>ctest<span class="w"> </span>--test-dir<span class="w"> </span>build<span class="w"> </span>--output-on-failure
+</code></pre></div>
+<h3 id="vi-sao-code-cli-chia-lam-ba-tang">Vì sao code CLI chia làm ba tầng<a class="headerlink" href="#vi-sao-code-cli-chia-lam-ba-tang" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Việc</th>
+<th>Test được?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cli/probe.cpp</code></td>
+<td>Đọc hệ thống thật: <code>/proc</code>, <code>busctl</code>, thư mục runtime</td>
+<td>Không — không có gì tất định để khẳng định</td>
+</tr>
+<tr>
+<td><code>cli/verdict.cpp</code></td>
+<td>Biến dữ kiện thành phán quyết</td>
+<td><strong>Có</strong> — hàm thuần, nhận struct trả về struct</td>
+</tr>
+<tr>
+<td><code>cli/doctor.cpp</code></td>
+<td>Vẽ bảng ra terminal</td>
+<td>Chỉ phần đo chữ (<code>cli/textfmt.cpp</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Ranh giới này không phải cho đẹp. Nó là <strong>cách duy nhất</strong> để test các nhánh Wayland từ một máy
+X11: test dựng thẳng <code>SessionInfo{display_server="wayland", compositor="kwin"}</code> rồi gọi
+<code>judge_session</code>, không cần compositor nào đang chạy.</p>
+<p>Cũng vì thế mà thay đổi cách hiển thị không bao giờ làm đổi kết luận của báo cáo — hai thứ nằm
+ở hai file khác nhau.</p>
+<h3 id="viet-them-test">Viết thêm test<a class="headerlink" href="#viet-them-test" title="Permanent link">&para;</a></h3>
+<p>Mỗi ca trong <code>cli/tests.cpp</code> đánh dấu <code>regression:</code> là một bug <strong>đã từng lọt ra thật</strong>. Ví dụ
+<code>pad_to</code> từng thêm 1 space thừa khi chuỗi dài đúng bằng cột, và khoảng trống module từng bị
+đánh dấu <code>LỖI</code> khiến mã thoát báo máy hỏng trong khi mọi ứng dụng vẫn gõ bình thường.</p>
+<p>Kiểm tra test có thật sự bắt lỗi bằng cách cố tình phá lại rồi build:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s|column - width : 0|column - width : 1|&#39;</span><span class="w"> </span>cli/textfmt.cpp<span class="w">   </span><span class="c1"># gây lại bug cũ</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./build/cli/telebit_doctor_tests<span class="w">             </span><span class="c1"># phải FAIL</span>
+</code></pre></div>
 <h2 id="viet-test">Viết test<a class="headerlink" href="#viet-test" title="Permanent link">&para;</a></h2>
 <p>Test nằm gọn trong <code>tests.cpp</code>, mỗi nhóm là một hàm <code>static void test_*()</code> gọi từ <code>main()</code>.
 Cách kiểm tra là <code>assert</code> trên <code>telex_to_unicode()</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">test_my_feature</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">telex_to_unicode</span><span class="p">(</span><span class="s">&quot;tieengs&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;tiếng&quot;</span><span class="p">);</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">telex_to_unicode</span><span class="p">(</span><span class="s">&quot;cheese&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;cheese&quot;</span><span class="p">);</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">test_my_feature</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">telex_to_unicode</span><span class="p">(</span><span class="s">&quot;tieengs&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;tiếng&quot;</span><span class="p">);</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">telex_to_unicode</span><span class="p">(</span><span class="s">&quot;cheese&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;cheese&quot;</span><span class="p">);</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="p">}</span>
 </code></pre></div>
 <p>Thêm hàm mới thì nhớ gọi nó trong <code>main()</code>, nếu không nó không bao giờ chạy.</p>
 <p>Có sẵn helper cho các cấu hình khác: <code>vni_opts()</code>, <code>no_spell_check_opts()</code>, <code>modern_tone_opts()</code>.</p>
@@ -1222,15 +1409,39 @@ Khi thêm rule mới, thêm luôn cả ca <strong>không nên</strong> bị chuy
 <code>test_spell_check_restore()</code> và <code>test_trailing_hat_escape()</code> làm mẫu.</p>
 </div>
 <h2 id="ci">CI<a class="headerlink" href="#ci" title="Permanent link">&para;</a></h2>
-<p>Workflow <code>.github/workflows/ci.yml</code> build core và chạy test trên mọi push và pull request.
-<code>release.yml</code> gọi lại đúng workflow đó và <code>needs: test</code>, nên test fail thì <strong>không</strong> ra package
-và <strong>không</strong> publish release.</p>
+<p>Workflow <code>.github/workflows/ci.yml</code> chạy trên mọi push và pull request, gồm <strong>hai job</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Làm gì</th>
+<th>Vì sao tách</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test</code></td>
+<td>Build core, chạy <code>telebit_telex_tests</code></td>
+<td>Chỉ cần compiler + cmake có sẵn trên runner</td>
+</tr>
+<tr>
+<td><code>test-cli</code></td>
+<td>Build <code>telebit-fcitx5/</code>, chạy <code>ctest</code> (suite <code>doctor</code>)</td>
+<td>Phải <code>apt-get install</code> header fcitx5 + libcurl trước</td>
+</tr>
+</tbody>
+</table>
+<p><code>release.yml</code> gọi lại đúng workflow này và các job <code>package-deb</code> / <code>package-rpm</code> / <code>release</code>
+đều <code>needs: test</code>. Workflow được gọi chỉ thành công khi <strong>mọi</strong> job trong nó thành công, nên
+test core <em>hoặc</em> test CLI fail đều chặn không ra package và không publish release.</p>
 <h2 id="cai-nhanh-ca-addon">Cài nhanh cả addon<a class="headerlink" href="#cai-nhanh-ca-addon" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>./install.sh<span class="w">            </span><span class="c1"># = --system (PREFIX=/usr)</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>./install.sh<span class="w"> </span>--user<span class="w">     </span><span class="c1"># PREFIX=$HOME/.local</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>./install.sh<span class="w">            </span><span class="c1"># = --system (PREFIX=/usr)</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>./install.sh<span class="w"> </span>--user<span class="w">     </span><span class="c1"># PREFIX=$HOME/.local</span>
 </code></pre></div>
-<p>Script build core → <strong>chạy test</strong> → build addon → <code>cmake --install</code>. Test fail là dừng, không cài
-gì cả.</p>
+<p>Script chạy tuần tự: build core → <strong>chạy test core</strong> → build addon + CLI → <strong>chạy test CLI</strong>
+(<code>build/cli/telebit_doctor_tests</code>) → <code>cmake --install</code>. Script đặt <code>set -euo pipefail</code> nên bất
+kỳ bước test nào fail là dừng ngay, không cài gì cả — kể cả khi core đã pass mà tầng verdict
+của doctor hỏng.</p>
 <h2 id="ong-goi">Đóng gói<a class="headerlink" href="#ong-goi" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1258,6 +1469,12 @@ gì cả.</p>
 </tr>
 </tbody>
 </table>
+<p>Gói ra chứa cả addon <code>.so</code> <strong>và</strong> binary <code>/usr/bin/telebit</code> — cùng một build, nên chúng không
+bao giờ lệch phiên bản.</p>
+<p>Biến môi trường quyết định chuỗi phiên bản, <code>telebit-fcitx5/CMakeLists.txt</code> đọc theo thứ tự ưu
+tiên: <code>TELEBIT_PACKAGE_VERSION</code> → <code>TELEBIT_DEB_PACKAGE_VERSION</code> → <code>PROJECT_VERSION</code> (<code>0.1.0</code>).
+Chuỗi chốt được ở đây chính là thứ <code>telebit --version</code> in ra và là giá trị trường <code>Version</code> của
+addon, nên hai bên không thể mâu thuẫn.</p>
 <h2 id="lien-quan">Liên quan<a class="headerlink" href="#lien-quan" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../architecture/">Kiến trúc</a> — luồng chuyển đổi và vai trò từng file</li>

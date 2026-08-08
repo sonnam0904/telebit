@@ -18,7 +18,7 @@
         <link rel="prev" href="../../concepts/spell-check/">
       
       
-        <link rel="next" href="../uninstall/">
+        <link rel="next" href="../doctor/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -481,6 +481,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../getting-started/install-with-ai-agent/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cài bằng AI agent
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../getting-started/first-use/" class="md-nav__link">
         
   
@@ -904,6 +925,30 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#app-cu-the-khong-go-duoc" class="md-nav__link">
+    <span class="md-ellipsis">
+      Chỉ một vài ứng dụng không gõ được
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Chỉ một vài ứng dụng không gõ được">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nho-ai-agent-oc-ho" class="md-nav__link">
+    <span class="md-ellipsis">
+      Nhờ AI agent đọc hộ
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#van-khong-xong" class="md-nav__link">
     <span class="md-ellipsis">
       Vẫn không xong?
@@ -916,6 +961,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../doctor/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lệnh telebit doctor
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -1149,6 +1215,30 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#app-cu-the-khong-go-duoc" class="md-nav__link">
+    <span class="md-ellipsis">
+      Chỉ một vài ứng dụng không gõ được
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Chỉ một vài ứng dụng không gõ được">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nho-ai-agent-oc-ho" class="md-nav__link">
+    <span class="md-ellipsis">
+      Nhờ AI agent đọc hộ
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#van-khong-xong" class="md-nav__link">
     <span class="md-ellipsis">
       Vẫn không xong?
@@ -1251,6 +1341,73 @@ cho Claude), và biến môi trường phải nhìn thấy được từ tiến 
 khi đang chẩn đoán, và đừng dán log lên chỗ công khai.</p>
 </div>
 <hr />
+<h2 id="app-cu-the-khong-go-duoc">Chỉ một vài ứng dụng không gõ được<a class="headerlink" href="#app-cu-the-khong-go-duoc" title="Permanent link">&para;</a></h2>
+<p>Gõ bình thường ở hầu hết chỗ nhưng riêng một app (thường là Snap / Flatpak) thì không —
+đây là ca mà <a href="../doctor/"><code>telebit doctor</code></a> sinh ra để xử lý.</p>
+<p>Tự làm thì chạy hai lệnh này rồi đối chiếu với <a href="../doctor/#gap-loi-thi-lam-gi">bảng "Gặp lỗi thì làm gì"</a>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>telebit<span class="w"> </span>doctor
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>telebit<span class="w"> </span>doctor<span class="w"> </span>--deep<span class="w">     </span><span class="c1"># khi app đó lỗi mà app khác cùng runtime vẫn ổn</span>
+</code></pre></div>
+<h3 id="nho-ai-agent-oc-ho">Nhờ AI agent đọc hộ<a class="headerlink" href="#nho-ai-agent-oc-ho" title="Permanent link">&para;</a></h3>
+<p>Nếu bạn đã dùng <strong>Claude Code</strong>, <strong>Codex CLI</strong>, <strong>Antigravity</strong> hay <strong>Gemini CLI</strong>, có thể để
+agent chạy doctor, đọc bảng và sửa. <code>telebit doctor --markdown</code> in ra bảng không màu, không có
+ANSI escape — đúng dạng agent parse được.</p>
+<div class="admonition tip">
+<p class="admonition-title">Thay <code>&lt;TÊN ỨNG DỤNG&gt;</code> trước khi gửi</p>
+<p>Prompt bên dưới chỉ hiệu quả khi bạn nói rõ app nào đang lỗi. Không có thông tin đó, agent
+sẽ đi sửa mọi dòng <code>!</code> trong báo cáo — phần lớn không phải nguyên nhân.</p>
+</div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Máy tôi cài bộ gõ tiếng Việt Telebit (addon cho fcitx5). Gõ được ở phần lớn
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>ứng dụng, nhưng ứng dụng &lt;TÊN ỨNG DỤNG&gt; thì không. Tìm nguyên nhân giúp tôi.
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>Công cụ chẩn đoán có sẵn trên máy: `telebit doctor`. Tài liệu:
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>https://sonnam0904.github.io/telebit/reference/doctor/
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>Làm theo thứ tự:
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>1. Chạy `telebit doctor --markdown` và đọc toàn bộ bảng. Nếu không có lệnh
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>   `telebit`, nghĩa là bản đang cài quá cũ — báo tôi nâng cấp rồi dừng.
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>2. Xác định ứng dụng đang lỗi thuộc loại nào: `flatpak list --app`,
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>   `snap list`, hay là app cài thẳng trên máy.
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>3. Nếu nó là Flatpak/Snap và bảng &quot;Ứng dụng sandbox&quot; chưa đủ kết luận, chạy
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>   `telebit doctor --deep --markdown`. Lệnh này mở shell bên trong từng
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>   sandbox để đọc biến môi trường thật, tốn vài giây mỗi app.
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>4. Chỉ sửa đúng những gì doctor chỉ ra. Cuối báo cáo doctor đã in sẵn danh
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>   sách gợi ý — ưu tiên làm theo đó thay vì tự nghĩ cách khác.
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>Cách đọc bảng, để không sửa nhầm chỗ:
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>- `✘` = đang hỏng thật. Xử lý trước tiên.
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>- `!` = rủi ro, CHƯA CHẮC là nguyên nhân. Ví dụ dòng &quot;GTK4 thiếu&quot; ở một
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>  platform snap không có nghĩa app của tôi hỏng — app GTK3 trên cùng runtime
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>  đó vẫn gõ bình thường. Chỉ đụng tới nếu app đang lỗi thật sự dùng toolkit đó.
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>- `·` = chỉ là thông tin, không phải kết quả phân tích.
+<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a>- `n/a` = runtime không hề có toolkit đó, không có gì để sửa. Khác với `thiếu`.
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a>Có trường hợp KHÔNG sửa được: nếu runtime của snap/flatpak đó không có module
+<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a>fcitx cho toolkit mà app dùng, không có cách nào ép module vào. Gặp ca đó thì
+<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a>nói thẳng với tôi và đề xuất dùng bản .deb/.rpm của ứng dụng, hoặc chuyển sang
+<a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>phiên Wayland — đừng thử vòng vo các cách không liên quan.
+<a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>
+<a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a>Quy tắc:
+<a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a>- Giải thích mỗi lệnh trước khi chạy; lệnh nào cần sudo thì nói rõ vì sao.
+<a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a>- Sau mỗi lần sửa, chạy lại `telebit doctor` để kiểm chứng, RỒI bảo tôi thử gõ
+<a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a>  lại trong đúng ứng dụng đó. Doctor xanh hết không thay được việc thử thật.
+<a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a>- Nhiều thay đổi chỉ có hiệu lực sau `fcitx5 -r`, một số cần logout/login.
+<a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a>  Nói rõ cái nào cần gì.
+<a id="__codelineno-7-41" name="__codelineno-7-41" href="#__codelineno-7-41"></a>- Sau hai vòng vẫn không ra thì dừng, tổng hợp output `telebit doctor --markdown`
+<a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a>  và những gì đã thử, để tôi mở issue.
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Agent không thay được bước thử gõ</p>
+<p>Doctor chỉ kiểm tra được <em>đường đi</em> của input method — module có mặt, frontend có mở,
+biến môi trường có tới nơi. Nó không gõ thử hộ bạn. Báo cáo sạch mà app vẫn không gõ được
+là thông tin có ích: <a href="https://github.com/sonnam0904/telebit/issues/new">mở issue</a> kèm
+output <code>telebit doctor --markdown</code>.</p>
+</div>
+<hr />
 <h2 id="van-khong-xong">Vẫn không xong?<a class="headerlink" href="#van-khong-xong" title="Permanent link">&para;</a></h2>
 <p><a href="https://github.com/sonnam0904/telebit/issues/new">Mở issue</a> kèm:</p>
 <ul>
@@ -1313,13 +1470,13 @@ khi đang chẩn đoán, và đừng dán log lên chỗ công khai.</p>
         
         
           
-          <a href="../uninstall/" class="md-footer__link md-footer__link--next" aria-label="Sau: Gỡ cài đặt">
+          <a href="../doctor/" class="md-footer__link md-footer__link--next" aria-label="Sau: Lệnh telebit doctor">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Sau
               </span>
               <div class="md-ellipsis">
-                Gỡ cài đặt
+                Lệnh telebit doctor
               </div>
             </div>
             <div class="md-footer__button md-icon">
