@@ -1,3 +1,10 @@
+# [2.9.0](https://github.com/sonnam0904/telebit/compare/v2.8.1...v2.9.0) (2026-08-08)
+
+
+### Features
+
+* New CLI:  `telebit doctor` ([4c60649](https://github.com/sonnam0904/telebit/commit/4c60649ba40a5d56a5b6211d36dc48f01a992864))
+
 ## [2.8.1](https://github.com/sonnam0904/telebit/compare/v2.8.0...v2.8.1) (2026-08-06)
 
 
