@@ -67,6 +67,7 @@ Dòng cuối mới là phần khó: `s` `f` `r` `x` `j` `w` và nguyên âm đô
 | Hệ điều hành của bạn | Cách nên dùng |
 |---|---|
 | **Ubuntu 22.04 / 24.04 / 26.04** | ✅ [**APT repo**](#install-apt-repo) — cài 1 lệnh, tự cập nhật về sau |
+| **Không chắc distro của mình** *(đã dùng Claude Code / Codex / Gemini)* | [Nhờ AI agent cài](#install-ai-agent) — agent tự chọn cách phù hợp |
 | **Debian / Ubuntu bản khác** | [Gói `.deb` tải tay](#install-deb) |
 | **Fedora / CentOS** | [Gói `.rpm`](#install-rpm) |
 | **Arch / distro khác** | [Build từ source](#install-source) |
@@ -97,9 +98,28 @@ sudo apt install telebit
 ```
 
 > [!IMPORTANT]
-> Repo hiện có 3 suite: **`jammy`** (Ubuntu 22.04), **`noble`** (24.04) và **`resolute`** (26.04). Chạy `lsb_release -cs` để kiểm tra máy bạn — nếu ra codename khác (ví dụ `bookworm` của Debian), `apt update` sẽ báo không tìm thấy, khi đó hãy dùng [Cách 2](#install-deb) và chọn file `.deb` gần nhất.
+> Repo hiện có 3 suite: **`jammy`** (Ubuntu 22.04), **`noble`** (24.04) và **`resolute`** (26.04). Chạy `lsb_release -cs` để kiểm tra máy bạn — nếu ra codename khác (ví dụ `bookworm` của Debian), `apt update` sẽ báo không tìm thấy, khi đó hãy dùng [Cách 3](#install-deb) và chọn file `.deb` gần nhất.
 
 `telebit` là metapackage tiện dùng, chỉ phụ thuộc vào gói thật `telebit-fcitx5` — `apt install telebit-fcitx5` cũng cho kết quả y hệt.
+
+**➡️ Cài xong? Chuyển sang [Bật fcitx5 và thêm input method](#-sau-khi-cài-3-bước-để-gõ-được).**
+
+---
+
+<a id="install-ai-agent"></a>
+
+### Cách 2 — Nhờ AI agent cài
+
+Đã dùng **Claude Code**, **Codex CLI**, **Antigravity** hay **Gemini CLI**? Giao luôn việc cài cho agent — nó tự nhận distro, chọn đúng cách trong bốn cách còn lại, chạy lệnh rồi xác minh bằng `telebit doctor`.
+
+Hữu ích khi bạn không chắc máy mình thuộc nhánh nào. Nếu đang dùng Ubuntu 22.04/24.04/26.04 thì [Cách 1](#install-apt-repo) vẫn nhanh hơn.
+
+> [!CAUTION]
+> Cài bộ gõ cần quyền root, nên agent sẽ xin chạy `sudo`. **Đọc từng lệnh trước khi duyệt** — đừng bật chế độ tự duyệt toàn bộ cho việc này. Agent cũng có thể nhớ sai tên gói hoặc URL, nên vẫn nên đối chiếu với các cách cài bên dưới.
+
+Agent cài được gói, nhưng bước thêm input method vẫn phải làm tay trong `fcitx5-configtool` — fcitx5 không cho thêm từ dòng lệnh.
+
+→ **[Prompt dán vào agent + hướng dẫn đầy đủ](https://sonnam0904.github.io/telebit/getting-started/install-with-ai-agent/)**
 
 **➡️ Cài xong? Chuyển sang [Bật fcitx5 và thêm input method](#-sau-khi-cài-3-bước-để-gõ-được).**
 
@@ -108,7 +128,7 @@ sudo apt install telebit
 <a id="install-deb"></a>
 
 <details>
-<summary><b>Cách 2 — Gói <code>.deb</code> tải tay</b> (Debian / Ubuntu)</summary>
+<summary><b>Cách 3 — Gói <code>.deb</code> tải tay</b> (Debian / Ubuntu)</summary>
 
 <br>
 
@@ -148,7 +168,7 @@ sudo apt-get install -f -y
 <a id="install-rpm"></a>
 
 <details>
-<summary><b>Cách 3 — Gói <code>.rpm</code></b> (Fedora / CentOS)</summary>
+<summary><b>Cách 4 — Gói <code>.rpm</code></b> (Fedora / CentOS)</summary>
 
 <br>
 
@@ -172,7 +192,7 @@ sudo dnf install -y ./telebit-fcitx5*.rpm
 <a id="install-script"></a>
 
 <details>
-<summary><b>Cách 4 — Build từ source</b> (mọi distro: Arch, Debian, Fedora, …)</summary>
+<summary><b>Cách 5 — Build từ source</b> (mọi distro: Arch, Debian, Fedora, …)</summary>
 
 <br>
 
@@ -195,7 +215,7 @@ sudo pacman -S --needed base-devel cmake extra-cmake-modules \
   fcitx5 fcitx5-configtool curl
 ```
 
-Yêu cầu: compiler **C++17**, **CMake ≥ 3.10**, header phát triển của **fcitx5** và **libcurl** (libcurl dùng cho trợ lý AI).
+Yêu cầu: compiler **C++17**, **CMake ≥ 3.21**, header phát triển của **fcitx5** và **libcurl** (libcurl dùng cho trợ lý AI).
 
 **2a. Cách nhanh — script `install.sh`**
 
@@ -363,16 +383,151 @@ Bạn cũng có thể tạo sẵn **skill** (`/tên-skill`) để tái dùng cá
 
 ## 🩺 Xử lý sự cố
 
+### Bước đầu tiên: chạy `telebit doctor`
+
+Gói cài kèm lệnh tự chẩn đoán `telebit`. Chạy nó trước khi thử bất kỳ cách sửa nào —
+nó chỉ ra mắt xích nào trong đường đi của input method đang hỏng.
+
+> [!IMPORTANT]
+> Lệnh `telebit` chỉ có **từ bản sau `v2.8.1`**. Bản cũ hơn cài xong chỉ có addon, không có
+> binary `/usr/bin/telebit` — gõ `telebit doctor` sẽ ra `command not found`.
+>
+> Kiểm tra máy bạn đang ở bản nào:
+>
+> ```bash
+> telebit --version        # có số phiên bản → CLI đã có sẵn
+> ```
+>
+> Nếu `command not found` → [Nâng cấp Telebit](#-nâng-cấp) rồi chạy lại.
+
+#### Cú pháp
+
+```bash
+telebit doctor [--deep] [--markdown]
+telebit --version
+telebit --help
+```
+
+| Lệnh / cờ | Khi nào dùng |
+|---|---|
+| `telebit doctor` | Chẩn đoán tiêu chuẩn. Chỉ đọc filesystem + tiến trình, chạy trong ~1 giây. **Luôn bắt đầu bằng lệnh này.** |
+| `telebit doctor --deep` | Khi một ứng dụng cụ thể không gõ được nhưng các ứng dụng khác cùng runtime thì bình thường. Mở shell dùng một lần *bên trong* từng sandbox để đọc biến môi trường thật. Tốn vài giây mỗi ứng dụng. |
+| `telebit doctor --markdown` | Xuất bảng Markdown không màu (không có ANSI escape) — dùng khi cần dán vào issue hoặc khi parse output bằng script/agent. |
+| `telebit --version` | In phiên bản, không kèm gì khác. |
+
+**Exit code:** `0` = không có mục nào ở trạng thái lỗi · `1` = có ít nhất một `✘` ·
+`2` = sai cú pháp (lệnh hoặc cờ không hiểu). Có thể dùng trực tiếp trong script:
+`telebit doctor >/dev/null || echo "có lỗi"`.
+
+> [!NOTE]
+> `telebit doctor` **không** kiểm tra locale, `ldd`, cache immodule — `fcitx5-diagnose`
+> (cài kèm fcitx5) đã làm phần đó. Hai lệnh bổ sung nhau: doctor lo sandbox và phiên đồ hoạ,
+> `fcitx5-diagnose` lo phần host.
+
+→ Chi tiết: [`telebit doctor`](https://sonnam0904.github.io/telebit/reference/doctor/)
+
+<a id="debug-with-ai-agent"></a>
+
+### Chỉ một vài ứng dụng không gõ được — nhờ AI agent đọc hộ
+
+Gõ bình thường ở hầu hết chỗ nhưng riêng một app (thường là Snap / Flatpak) thì không? Nếu bạn đã dùng **Claude Code**, **Codex CLI**, **Antigravity** hay **Gemini CLI**, để agent chạy doctor rồi đọc bảng — `telebit doctor --markdown` in ra bảng không màu, không ANSI escape, đúng dạng agent parse được.
+
+> [!TIP]
+> Trong prompt nhớ thay `<TÊN ỨNG DỤNG>` bằng app đang lỗi. Không nói rõ app nào thì agent sẽ đi sửa mọi dòng `!` trong báo cáo — phần lớn không phải nguyên nhân.
+
+Doctor chỉ kiểm tra được **đường đi** của input method — module có mặt, frontend có mở, biến môi trường có tới nơi. Nó không gõ thử hộ bạn: báo cáo sạch mà app vẫn không gõ được là thông tin có ích, hãy kèm nó khi mở issue.
+
+→ **[Prompt dán vào agent + hướng dẫn đầy đủ](https://sonnam0904.github.io/telebit/reference/troubleshooting/#app-cu-the-khong-go-duoc)**
+
+### Các lỗi thường gặp
+
 | Hiện tượng | Thử trước |
 |---|---|
 | Không thấy `telebit-fcitx5` khi bấm **Add** | `fcitx5 -r`, chưa được thì logout/login hoặc reboot |
 | Cài xong nhưng gõ không ra chữ Việt | Kiểm tra fcitx5 đang là IM của session: `im-config -n fcitx5` → logout/login |
 | Chữ bị nhân đôi hoặc nhảy lộn xộn | Bỏ tích **DirectCommitRollback** để về chế độ preedit |
 | Tiếng Anh bị biến dạng | Bật **SpellCheckRestore**, hoặc <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> để tắt tạm |
-| Cài `--user` nhưng fcitx5 không nhận | Cài lại bằng `--system` (xem cảnh báo ở [Cách 4](#install-source)) |
+| Cài `--user` nhưng fcitx5 không nhận | Cài lại bằng `--system` (xem cảnh báo ở [Cách 5](#install-source)) |
+| Ứng dụng Snap / Flatpak không gõ được | `telebit doctor` — nó cho biết sandbox đó có module fcitx hay không · [nhờ AI agent đọc hộ](#debug-with-ai-agent) |
 | Bộ gõ vnkey cũ vẫn còn tranh bàn phím | [Chuyển từ vnkey](https://sonnam0904.github.io/telebit/reference/migrate-from-vnkey/) |
 
 → Đầy đủ hơn: [Xử lý sự cố](https://sonnam0904.github.io/telebit/reference/troubleshooting/) · Vẫn tắc? [Mở issue](https://github.com/sonnam0904/telebit/issues/new)
+
+---
+
+<a id="-nâng-cấp"></a>
+
+## ⬆️ Nâng cấp
+
+Cách nâng cấp phụ thuộc vào cách bạn đã cài. Sau khi nâng cấp, chạy `fcitx5 -r` để fcitx5
+nạp lại addon mới, rồi `telebit --version` để xác nhận.
+
+| Đã cài bằng | Lệnh nâng cấp |
+|---|---|
+| [APT repo](#install-apt-repo) | `sudo apt update && sudo apt install --only-upgrade telebit-fcitx5` |
+| [Gói `.deb`](#install-deb) | Tải `.deb` mới → `sudo apt install -y ./telebit-fcitx5_*_amd64.deb` |
+| [Gói `.rpm`](#install-rpm) | Tải `.rpm` mới → `sudo dnf upgrade -y ./telebit-fcitx5*.rpm` |
+| [Build từ source](#install-source) | `git pull && ./install.sh` |
+
+<details>
+<summary><b>Chi tiết từng cách</b></summary>
+
+<br>
+
+**APT repo** — cách duy nhất nhận bản mới tự động. `sudo apt upgrade` thông thường cũng
+kèm theo Telebit; nếu muốn chỉ nâng cấp Telebit:
+
+```bash
+sudo apt update
+sudo apt install --only-upgrade telebit-fcitx5
+fcitx5 -r
+telebit --version
+```
+
+Chưa thêm repo mà đang dùng `.deb` tải tay? Thêm repo theo [Cách 1](#install-apt-repo) —
+APT sẽ tiếp quản gói đang cài, không cần gỡ trước.
+
+**Gói `.deb` tải tay** — không có cơ chế tự cập nhật, phải tải lại mỗi lần. Lấy file đúng distro (xác định distro bằng  cli `lsb_release -cs`) từ [Releases](https://github.com/sonnam0904/telebit/releases):
+
+```bash
+cd ~/Downloads
+sudo apt install -y ./telebit-fcitx5_*_amd64.deb   # tự đè bản cũ, không cần gỡ trước
+fcitx5 -r
+telebit --version
+```
+
+**Gói `.rpm`**:
+
+```bash
+cd ~/Downloads
+sudo dnf upgrade -y ./telebit-fcitx5*.rpm
+fcitx5 -r
+telebit --version
+```
+
+**Build từ source** — kéo code mới rồi cài đè. Dùng đúng prefix đã cài lần trước:
+
+```bash
+cd telebit
+git pull
+./install.sh            # hoặc ./install.sh --user nếu lần đầu cài --user
+fcitx5 -r
+telebit --version
+```
+
+Nếu build lỗi sau khi `git pull`, xoá thư mục build cũ rồi thử lại:
+
+```bash
+rm -rf build telebit-fcitx5/build
+./install.sh
+```
+
+</details>
+
+> [!WARNING]
+> Cấu hình của bạn (`DirectCommitRollback`, macro, phím tắt…) nằm ở
+> `~/.config/fcitx5/conf/telebit-fcitx5.conf` và **không bị nâng cấp đụng tới**. Chỉ khi gỡ
+> hẳn bằng `apt purge` mới mất.
 
 ---
 
@@ -440,7 +595,7 @@ fcitx5 -r
 
 ### Build core C++ và chạy test
 
-Core không cần fcitx5 hay libcurl — chỉ compiler C++17 và CMake ≥ 3.10:
+Core không cần fcitx5 hay libcurl — chỉ compiler C++17 và CMake ≥ 3.21:
 
 ```bash
 cmake -B build .

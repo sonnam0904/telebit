@@ -23,3 +23,32 @@ jobs:
 
       - name: Run C++ tests
         run: ./build/telebit_telex_tests
+
+  # Separate job because this one needs the fcitx5 and libcurl headers: the
+  # doctor CLI itself links neither, but it lives in the telebit-fcitx5 project
+  # and configuring that project also configures the addon target.
+  #
+  # It runs here rather than only in install.sh so a broken verdict layer cannot
+  # reach a release — release.yml gates its packaging jobs on this workflow, and
+  # a called workflow only succeeds when every one of its jobs does.
+  test-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install fcitx5 and libcurl headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            extra-cmake-modules \
+            libfcitx5core-dev \
+            libfcitx5utils-dev \
+            libcurl4-openssl-dev
+
+      - name: Build addon and doctor CLI
+        run: |
+          cmake -B telebit-fcitx5/build telebit-fcitx5
+          cmake --build telebit-fcitx5/build -j"$(nproc)"
+
+      - name: Run doctor CLI tests
+        run: ctest --test-dir telebit-fcitx5/build --output-on-failure

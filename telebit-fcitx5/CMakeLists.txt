@@ -54,7 +54,12 @@ else()
 endif()
 message(STATUS "Telebit version: package=${_telebit_pkg_ver} addon=${TELEBIT_ADDON_VERSION}")
 
+# Must be called from the top-level list file: add_test() in a subdirectory is
+# silently ignored otherwise, and `ctest` reports "No tests were found".
+enable_testing()
+
 add_subdirectory(src)
+add_subdirectory(cli)
 
 # systemd user-manager environment drop-in: sets GTK_IM_MODULE/QT_IM_MODULE/
 # XMODIFIERS for the graphical session, which is also what makes Flatpak apps

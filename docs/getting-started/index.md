@@ -41,7 +41,7 @@ Trang này giúp bạn chọn đường đi ngắn nhất tới lúc gõ đượ
 Telebit là addon cho **fcitx5**, không phải một bộ gõ độc lập. Trước khi cài, máy cần:
 
 - **fcitx5** đang chạy và là input method của session (không phải IBus)
-- Nếu build từ source: compiler **C++17**, **CMake ≥ 3.10**, header của fcitx5 và libcurl
+- Nếu build từ source: compiler **C++17**, **CMake ≥ 3.21**, header của fcitx5 và libcurl
 
 Nếu chưa từng dùng fcitx5, [Dùng lần đầu](first-use.md) có phần hướng dẫn đặt fcitx5 làm
 input method mặc định.

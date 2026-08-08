@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.21)
 project(telebit_telex LANGUAGES CXX)
 
 # Most install paths (install.sh, manual `cmake -B build .`) never pass

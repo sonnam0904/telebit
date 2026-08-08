@@ -34,6 +34,11 @@ cd "${ROOT_DIR}/telebit-fcitx5"
 cmake -B build -DCMAKE_INSTALL_PREFIX="${PREFIX}" .
 cmake --build build
 
+# The doctor CLI ships in the same package, so its suite runs here rather than
+# with the engine tests above — a broken verdict layer must not reach an install.
+echo "==> Running doctor CLI tests ..."
+./build/cli/telebit_doctor_tests
+
 echo "==> Installing addon 'telebit-fcitx5' into ${PREFIX} ..."
 if [[ "$MODE" == "system" ]]; then
   sudo cmake --install build
@@ -65,6 +70,8 @@ echo
 echo "Done."
 echo "- Add input method 'telebit-fcitx5' in fcitx5-configtool (Input Method -> Add -> Telebit / telebit-fcitx5)."
 echo "- Then restart fcitx5: fcitx5 -r"
+echo
+echo "- Check the whole input-method path, sandboxed apps included: telebit doctor"
 echo
 echo "Installed ${ENVD_FILE}: it points GTK_IM_MODULE / QT_IM_MODULE / XMODIFIERS at"
 echo "fcitx5 for the whole graphical session, Flatpak apps included."

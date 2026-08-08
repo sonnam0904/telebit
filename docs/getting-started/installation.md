@@ -1,10 +1,11 @@
 # Cài đặt
 
-Có 5 cách cài. Nếu bạn dùng Ubuntu/Debian, dùng cách đầu tiên.
+Có 6 cách cài. Nếu bạn dùng Ubuntu/Debian, dùng cách đầu tiên.
 
 | Cách | Phù hợp khi | Tự cập nhật |
 |---|---|:---:|
 | [APT repo](#apt-repo) | Ubuntu/Debian — **khuyên dùng** | ✅ |
+| [Nhờ AI agent](install-with-ai-agent.md) | Không chắc distro của mình; đã dùng Claude Code / Codex / Gemini | tuỳ cách agent chọn |
 | [Gói `.deb`](#deb) | Ubuntu/Debian, tải tay | ❌ |
 | [Gói `.rpm`](#rpm) | Fedora/CentOS | ❌ |
 | [CMake thủ công](#cmake) | Distro khác, hoặc muốn sửa code | ❌ |
