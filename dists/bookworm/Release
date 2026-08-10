@@ -1,0 +1,24 @@
+Architectures: amd64
+Codename: bookworm
+Components: main
+Date: Mon, 10 Aug 2026 06:38:03 +0000
+Description: Telebit Vietnamese Telex/VNI input method (fcitx5) APT repository
+Label: Telebit
+Origin: Telebit
+Suite: bookworm
+MD5Sum:
+ 71856b8f81443d9377f6bc0f4a1fa92a              221 Release
+ d433934d66d2d1c94571ce981f979330             1421 main/binary-amd64/Packages
+ 3af794e96477e84e3b1a2103edfde8d9              716 main/binary-amd64/Packages.gz
+SHA1:
+ 3ef832c72d366262c27652ef3e693b0e18c31ae9              221 Release
+ 0ab7d63dde6654cf0ddc8ff97ffabf4b2f3a1b95             1421 main/binary-amd64/Packages
+ 7df5a67d1b65388ca596de5b9f997de37db71b1e              716 main/binary-amd64/Packages.gz
+SHA256:
+ 33a7732bc7586347794ddbddab695eb7f1485f84908eb87241e933d1ce84f5f6              221 Release
+ 410cb8c6bcb31d6fbabe07ba6cac33282d51ceb4dbdf735c01a2448245aff43b             1421 main/binary-amd64/Packages
+ 6adf1378493d755ceba7023339a3513453ffdbd4408ddb3996a19ea65b3a7040              716 main/binary-amd64/Packages.gz
+SHA512:
+ 97340fba3bdb4706cadb3c7a2aa0aa4f351f99e0e158997a443a720236629dccf841c6bd3eb8b307f3f3c77bc812b35eb9de564df18baf58724e43e2aa58772a              221 Release
+ 6d5ea1a56feb388b1d8b80aa9d2a87ee4141213f109fbc8631a234c731eca381178a81f77ea74d21e2a18bdbd542199419ba7547f31b16d8d5f2d2b4fedb0f1d             1421 main/binary-amd64/Packages
+ 3d95c908ab3bd44e9fac5d645abb7a5a559407e48eb4eb70d65cc1116f50c0470a43fd072aaf2c6bc21068d3e5f82fb4a5c3fc0daa02e96f11428d275bf9feaa              716 main/binary-amd64/Packages.gz

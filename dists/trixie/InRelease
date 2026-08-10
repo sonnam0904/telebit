@@ -1,0 +1,43 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Architectures: amd64
+Codename: trixie
+Components: main
+Date: Mon, 10 Aug 2026 06:38:03 +0000
+Description: Telebit Vietnamese Telex/VNI input method (fcitx5) APT repository
+Label: Telebit
+Origin: Telebit
+Suite: trixie
+MD5Sum:
+ 71496dd33b9b8c77c9d046ce3b4ff37e              217 Release
+ 34cf94eaa56484aba1487aa66d6f9daf             1409 main/binary-amd64/Packages
+ 686b1b28f4c268e48406dbcc9d323f20              711 main/binary-amd64/Packages.gz
+SHA1:
+ 7fc9209865139f7412fe7a38629bde0192c18260              217 Release
+ 4f3495cfe9e77c0ce218d9da81486847dfdc7123             1409 main/binary-amd64/Packages
+ c6435be5651c9c0cd388bdcce1a6de123f51512c              711 main/binary-amd64/Packages.gz
+SHA256:
+ 7741667b427e7ea09d1e351dc7cedbbe41e3a3b7f41858aadeee7391b206d7b9              217 Release
+ 3987603145e84c2286e905bff6b2bb61aa08e000367a4b6c283cf3ea733112b6             1409 main/binary-amd64/Packages
+ 4ef2b7ba8e72e28183000f13d93fc26fdc174a7f7da065bc2282403bf27f3806              711 main/binary-amd64/Packages.gz
+SHA512:
+ 9c63a7d11ba44041eb1e13efde0fdec801f98bd4107f4d1151156661873abd461a074342b847292d76319d374ab1af055a4b3ec4ff8b627fc9078b54adddc864              217 Release
+ ceedbb6a96991f775d0932738c91f3d565a9233da84e7429ad9375afa88db3e123ba907d2c561ea124bfa6b6d4893e53ad58833415882d7dbb67ea19ba75d9ae             1409 main/binary-amd64/Packages
+ 9f78d4babfcec74a1fe4c13a0b28808f494839ea0f11c2df4f2fad62df7efb417619228fadf6e0e0ca2adae7a8b5fe934c923820b3ff91130e6764213aa17175              711 main/binary-amd64/Packages.gz
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCgAdFiEEFtspp4cNq6SWvlK7LRVLX7ZFCl4FAmp5ccsACgkQLRVLX7ZF
+Cl48CA/+IPPOh49XtY5cTAy4p+6n7J/TaMQ1pv3NO6jizK6qUOIvEUlRdGpAdy19
+hsmkjQ+BqJ0q4JNTJWrXPJ+BsSo1ZU4odtepEEQ9bEttihGDiChi+odwe0Wag1WR
+s9td6AWLNjgie4YQHCSJeULwumUZyegOGec3mpZH4k3OG201wGWe3NA9YP2/G0xQ
+YS7LmGf5mgqRkjzuAUUY7ytGn2hGWv6olS12kmLQ0Z6WkdH+fFR+IDFJGgGtqDvH
+2g0NQIYNCD2+XQ52ZQBxxJIFuiQdXom0xEioGrMiPIt5zmSHaLNEe7UhGaOApAl7
+sd+YAsWEclCZUATf55yHO6XZ27pDa+z3d6sx5uONs9H3lsKhjpkXKqorryOsuGYt
+2YQw3irqBUmGDy7MmlkGaDoKeomh42Wq+YNteDk5kc3ldHE8UCPh2BRNgetlPPfZ
+SI8GWZi5k06WcQsp/dTfSO6pGP0kQ9VwS0ty0t/FilDGY1F7rrS2bQozFKyF9Z2j
+0KAfOqS6WH1OQb7+ltW1tPfeVZpu5/fwBaFEG9c0zCNlsP4XyMWSoogTANmDHvuU
+8y040G4MY4KGXCl47QV+cyqNwGulVVCvVpcCEX9WqTmj5QUH55RmfdA4KudXVDws
+0ojJaPZZBVAenh1ZZ2gXXjR9W5Wv3J7I83BHY3HumYEdZH+9Z40=
+=0POF
+-----END PGP SIGNATURE-----
