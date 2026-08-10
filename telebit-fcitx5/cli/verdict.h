@@ -66,6 +66,26 @@ void judge_session(const SessionInfo &session, Output &out);
 void judge_fcitx5(const Fcitx5Info &fcitx5, const SessionInfo &session, const Report &report,
                   Output &out);
 RuntimeVerdict judge_runtime(const SandboxRuntime &runtime, const SessionInfo &session);
+
+// The host root, i.e. every application installed from a .deb / .rpm / pacman
+// package. Unlike a sandbox this one is fixable — a missing module is a package
+// away — so the advice names packages rather than explaining a dead end.
+void judge_host(const HostInfo &host, const SessionInfo &session, Output &out);
+
+// Which scanned applications link one toolkit, and how much of the scan could
+// not answer.
+//
+// Separated from the row it feeds so the two things that make this list honest
+// are testable on their own: it reports only positive matches, and it carries the
+// count of applications whose toolkit could not be read — without which a partial
+// list reads as a complete one.
+struct AffectedApps {
+    std::vector<std::string> names;
+    std::size_t unknown = 0;  // toolkit could not be determined
+    std::size_t scanned = 0;  // applications inspected in total
+};
+
+AffectedApps apps_using(const HostInfo &host, bool NativeApp::*toolkit);
 void judge_sandboxes(const Report &report, const SessionInfo &session, Output &out);
 
 // Display name for a runtime, with the architecture segment of a Flatpak ref

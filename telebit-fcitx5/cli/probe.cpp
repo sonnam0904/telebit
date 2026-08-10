@@ -61,6 +61,9 @@ struct CommandResult {
 constexpr int kProbeTimeoutSeconds = 10;
 // A sandbox launch is a cold start of a whole runtime, so it gets its own budget.
 constexpr int kSandboxTimeoutSeconds = 25;
+// One ldd call covers every installed application at once, so it is allowed more
+// than a single-answer probe: it does the work that used to be hundreds of them.
+constexpr int kLddTimeoutSeconds = 30;
 
 // popen already hands the string to `sh -c`, but `timeout` has to wrap the whole
 // command: prefixed bare it would bound only the first stage of a pipeline.
@@ -261,21 +264,103 @@ ModuleKind classify(const std::string &filename, bool gtk3) {
     return ModuleKind::None;
 }
 
-ModuleKind scan_dir(const fs::path &dir, bool gtk3) {
+// `filename`, when given, receives the basename of the module that won. The host
+// GTK3 check needs it: GTK loads a module only through the name recorded in
+// immodules.cache, so knowing *which* file is installed is what tells a
+// registered module apart from a cache still pointing at the previous one.
+ModuleKind scan_dir(const fs::path &dir, bool gtk3, std::string *filename = nullptr) {
     std::error_code ec;
     if (!fs::is_directory(dir, ec)) return ModuleKind::None;
     ModuleKind best = ModuleKind::None;
+    std::string best_name;
     for (const auto &entry : fs::directory_iterator(dir, ec)) {
-        const ModuleKind kind = classify(entry.path().filename().string(), gtk3);
-        if (kind == ModuleKind::Fcitx5) return ModuleKind::Fcitx5;  // nothing outranks it
-        if (kind == ModuleKind::Fcitx4) best = ModuleKind::Fcitx4;
+        const std::string name = entry.path().filename().string();
+        const ModuleKind kind = classify(name, gtk3);
+        if (kind == ModuleKind::Fcitx5) {  // nothing outranks it
+            if (filename != nullptr) *filename = name;
+            return ModuleKind::Fcitx5;
+        }
+        if (kind == ModuleKind::Fcitx4) {
+            best = ModuleKind::Fcitx4;
+            best_name = name;
+        }
     }
+    if (filename != nullptr && best != ModuleKind::None) *filename = best_name;
     return best;
 }
 
 void merge(ModuleKind &slot, ModuleKind found) {
     if (found == ModuleKind::Fcitx5) slot = ModuleKind::Fcitx5;
     else if (found == ModuleKind::Fcitx4 && slot == ModuleKind::None) slot = ModuleKind::Fcitx4;
+}
+
+// Which toolkit a library on disk proves is installed.
+enum class ToolkitId {
+    Gtk3,
+    Gtk4,
+    Qt5,
+    Qt6,
+};
+
+// The library whose presence proves each toolkit. One table for the sandbox and
+// the host scanner: they used to carry a copy each, and copies of this knowledge
+// drift — the Qt plugin layout list below had already diverged between them,
+// which left a Flatpak runtime reported as missing a Qt plugin it shipped.
+struct ToolkitSoname {
+    const char *prefix;
+    ToolkitId toolkit;
+};
+
+constexpr ToolkitSoname kToolkitSonames[] = {
+    {"libgtk-3.so", ToolkitId::Gtk3},
+    {"libgtk-4.so", ToolkitId::Gtk4},
+    {"libQt5Gui.so", ToolkitId::Qt5},
+    {"libQt6Gui.so", ToolkitId::Qt6},
+};
+
+// The Qt plugin layouts in the wild, and which Qt each one serves. Qt5 and Qt6
+// install the *same* plugin filename, so the directory is the only thing that
+// says which version a plugin belongs to: Debian and Fedora use qt5/ and qt6/,
+// Arch puts Qt5 in qt/ and Qt6 in qt6/, and the bare plugins/ layout predates
+// the split and is therefore Qt5.
+struct QtPluginRoot {
+    const char *dir;
+    bool qt6;
+};
+
+constexpr QtPluginRoot kQtPluginRoots[] = {
+    {"qt6/plugins", true},
+    {"qt5/plugins", false},
+    {"qt/plugins", false},
+    {"plugins", false},
+};
+
+// Every library directory worth scanning under one root: the root itself plus one
+// level down, which is where the architecture triplet (/usr/lib/x86_64-linux-gnu)
+// and the per-Qt-version trees live.
+std::vector<fs::path> lib_bases(const fs::path &lib_root) {
+    std::vector<fs::path> bases{lib_root};
+    std::error_code ec;
+    for (const auto &entry : fs::directory_iterator(lib_root, ec)) {
+        if (entry.is_directory(ec)) bases.push_back(entry.path());
+    }
+    return bases;
+}
+
+// Runs the Qt plugin table over one base, routing each hit to the Qt version the
+// directory belongs to. `sink` takes (is_qt6, kind) so the caller decides where
+// the answer lands — the sandbox keeps one Qt slot, the host keeps two.
+template <typename Sink>
+void scan_qt_plugins(const fs::path &base, const Sink &sink) {
+    // A base that is itself a Qt tree already declares its version; asking the
+    // table again would read <libdir>/qt6/plugins as a Qt5 directory.
+    if (const auto qt6 = qt6_from_directory_name(base.filename().string())) {
+        sink(*qt6, scan_dir(base / "plugins" / "platforminputcontexts", false));
+        return;
+    }
+    for (const auto &qt : kQtPluginRoots) {
+        sink(qt.qt6, scan_dir(base / qt.dir / "platforminputcontexts", false));
+    }
 }
 
 // Looks for IM modules under one library root. Flatpak runtimes put them in
@@ -285,22 +370,22 @@ void merge(ModuleKind &slot, ModuleKind found) {
 void scan_lib_root(const fs::path &lib_root, ModuleSet &out) {
     if (!dir_exists(lib_root)) return;
 
-    std::vector<fs::path> bases{lib_root};
     std::error_code ec;
-    for (const auto &entry : fs::directory_iterator(lib_root, ec)) {
-        if (entry.is_directory(ec)) bases.push_back(entry.path());
-    }
-
-    for (const auto &base : bases) {
+    for (const auto &base : lib_bases(lib_root)) {
         // One listing of the library directory answers "is this toolkit even
         // here", which is what separates a missing module from a non-existent
         // problem.
         for (const auto &entry : fs::directory_iterator(base, ec)) {
             const std::string name = entry.path().filename().string();
-            if (name.rfind("libgtk-3.so", 0) == 0) out.gtk3_present = true;
-            else if (name.rfind("libgtk-4.so", 0) == 0) out.gtk4_present = true;
-            else if (name.rfind("libQt5Gui.so", 0) == 0 || name.rfind("libQt6Gui.so", 0) == 0) {
-                out.qt_present = true;
+            for (const auto &soname : kToolkitSonames) {
+                if (name.rfind(soname.prefix, 0) != 0) continue;
+                switch (soname.toolkit) {
+                    case ToolkitId::Gtk3: out.gtk3_present = true; break;
+                    case ToolkitId::Gtk4: out.gtk4_present = true; break;
+                    // A runtime ships one Qt, so both versions land in one slot.
+                    case ToolkitId::Qt5:
+                    case ToolkitId::Qt6: out.qt_present = true; break;
+                }
             }
         }
 
@@ -315,9 +400,7 @@ void scan_lib_root(const fs::path &lib_root, ModuleSet &out) {
             }
         }
 
-        for (const char *qt : {"plugins", "qt5/plugins", "qt6/plugins"}) {
-            merge(out.qt, scan_dir(base / qt / "platforminputcontexts", false));
-        }
+        scan_qt_plugins(base, [&out](bool, ModuleKind found) { merge(out.qt, found); });
     }
 }
 
@@ -326,6 +409,183 @@ ModuleSet scan_runtime(const fs::path &root) {
     scan_lib_root(root / "lib", set);
     scan_lib_root(root / "usr" / "lib", set);
     return set;
+}
+
+// ---------------------------------------------------------------------------
+// Host module detection
+// ---------------------------------------------------------------------------
+
+// Where a natively packaged toolkit keeps its libraries. lib64 is a *sibling* of
+// lib rather than a child, so /usr/lib alone never reaches the layout every .rpm
+// uses — the same trap probe_fcitx5() had to work around for the addon.
+//
+// Unlike the sandbox scan there is deliberately no $HOME entry: GTK and Qt look
+// only in the libdir they were built against, so a module under ~/.local would
+// be found by us and never loaded by them. Reporting it as present would be
+// worse than not looking at all.
+std::vector<fs::path> host_lib_roots() {
+    return {"/usr/lib", "/usr/lib64", "/usr/local/lib", "/usr/local/lib64"};
+}
+
+// The GTK3 module/cache verdict for exactly one library directory. Deciding it
+// per base is what keeps `module_file` and `other_fcitx` describing the same
+// place: aggregated field-by-field they could come from two different bases and
+// name the same file as both installed and stale.
+Gtk3Cache gtk3_cache_for_base(const fs::path &base) {
+    Gtk3Cache result;
+    const fs::path gtk3 = base / "gtk-3.0" / "3.0.0";
+
+    std::string module_file;
+    const ModuleKind kind = scan_dir(gtk3 / "immodules", true, &module_file);
+    if (kind == ModuleKind::None) return result;  // nothing here to register
+
+    result.module_file = module_file;
+    const std::string cache = read_file(gtk3 / "immodules.cache");
+    if (cache.empty()) {
+        result.state = Gtk3CacheState::NoCache;
+        return result;
+    }
+
+    const CacheRegistration registration = immodules_cache_registration(cache, module_file);
+    result.state =
+        registration.lists_module ? Gtk3CacheState::Registered : Gtk3CacheState::NotRegistered;
+    result.other_fcitx = registration.other_fcitx;
+    return result;
+}
+
+// Same shape as scan_lib_root: the root itself plus one level down, which is
+// where the architecture triplet directory (/usr/lib/x86_64-linux-gnu) lives.
+void scan_host_root(const fs::path &lib_root, HostInfo &out) {
+    std::error_code ec;
+    for (const auto &base : lib_bases(lib_root)) {
+        for (const auto &entry : fs::directory_iterator(base, ec)) {
+            const std::string name = entry.path().filename().string();
+            for (const auto &soname : kToolkitSonames) {
+                if (name.rfind(soname.prefix, 0) != 0) continue;
+                switch (soname.toolkit) {
+                    case ToolkitId::Gtk3: out.gtk3.present = true; break;
+                    case ToolkitId::Gtk4: out.gtk4.present = true; break;
+                    case ToolkitId::Qt5: out.qt5.present = true; break;
+                    case ToolkitId::Qt6: out.qt6.present = true; break;
+                }
+            }
+        }
+
+        merge(out.gtk3.module, scan_dir(base / "gtk-3.0" / "3.0.0" / "immodules", true));
+
+        // Keep the worst pairing seen, whole. Merging its fields separately is
+        // what produced a row saying the cache both does and does not register
+        // one filename.
+        out.gtk3_cache = worse_gtk3_cache(out.gtk3_cache, gtk3_cache_for_base(base));
+
+        // GTK4 keys the directory on its own version, so the level in between has
+        // to be enumerated rather than guessed.
+        const fs::path gtk4 = base / "gtk-4.0";
+        if (dir_exists(gtk4)) {
+            for (const auto &entry : fs::directory_iterator(gtk4, ec)) {
+                merge(out.gtk4.module, scan_dir(entry.path() / "immodules", false));
+            }
+        }
+
+        scan_qt_plugins(base, [&out](bool qt6, ModuleKind found) {
+            merge(qt6 ? out.qt6.module : out.qt5.module, found);
+        });
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Native applications
+// ---------------------------------------------------------------------------
+
+// Where desktop entries for natively installed applications live.
+//
+// XDG_DATA_DIRS is deliberately not consulted: on Ubuntu it also contains
+// /var/lib/snapd/desktop and the Flatpak exports tree, and those applications
+// belong to the sandbox section — their toolkit lives inside the sandbox, so
+// judging them against the host's modules would be wrong twice over.
+std::vector<fs::path> desktop_entry_dirs() {
+    std::vector<fs::path> dirs{"/usr/share/applications", "/usr/local/share/applications"};
+    const std::string home = env_or_empty("HOME");
+    if (!home.empty()) dirs.push_back(fs::path(home) / ".local" / "share" / "applications");
+    return dirs;
+}
+
+// The libraries that identify a toolkit, and which flag each one sets. Qt is
+// matched on Widgets and Quick as well as Gui because a Qt application links
+// whichever of them it uses and ldd's output is transitive — Gui alone would
+// still catch most, but not all, and a missed application is a missed incident.
+struct ToolkitLibrary {
+    const char *soname;
+    bool NativeApp::*flag;
+};
+
+constexpr ToolkitLibrary kToolkitLibraries[] = {
+    {"libgtk-3.so", &NativeApp::gtk3},
+    {"libgtk-4.so", &NativeApp::gtk4},
+    {"libQt5Gui.so", &NativeApp::qt5},
+    {"libQt5Widgets.so", &NativeApp::qt5},
+    {"libQt5Quick.so", &NativeApp::qt5},
+    {"libQt6Gui.so", &NativeApp::qt6},
+    {"libQt6Widgets.so", &NativeApp::qt6},
+    {"libQt6Quick.so", &NativeApp::qt6},
+};
+
+// Splits an Exec value the way the desktop entry spec does for our purpose:
+// far enough to find the binary. Quotes are honoured because a path with a space
+// is quoted there, and the field codes are dropped because "%U" is not an
+// argument the binary ever sees.
+std::vector<std::string> split_exec(const std::string &exec) {
+    std::vector<std::string> tokens;
+    std::string current;
+    // Which character opened the quoted region, not merely "are we in one": a
+    // single flag toggled by either quote let the apostrophe in
+    // "/home/user/Bob's App/run" close the region the double quote opened, so the
+    // next space ended the token and the binary came out as /home/user/Bobs.
+    char quote = '\0';
+    bool have = false;
+    for (const char c : exec) {
+        if (quote == '\0' && (c == '"' || c == '\'')) {
+            quote = c;
+            have = true;
+            continue;
+        }
+        if (c == quote) {
+            quote = '\0';
+            continue;
+        }
+        if (quote == '\0' && (c == ' ' || c == '\t')) {
+            if (have) tokens.push_back(current);
+            current.clear();
+            have = false;
+            continue;
+        }
+        current += c;
+        have = true;
+    }
+    if (have) tokens.push_back(current);
+
+    std::vector<std::string> out;
+    for (const auto &token : tokens) {
+        if (!token.empty() && token[0] == '%') continue;
+        out.push_back(token);
+    }
+    return out;
+}
+
+// Resolves a bare command name against PATH. Entries name their binary either
+// absolutely or by name, and only the caller's PATH can tell the second apart
+// from a typo.
+std::string resolve_on_path(const std::string &command) {
+    if (command.find('/') != std::string::npos) return command;
+    std::error_code ec;
+    std::istringstream path(env_or_empty("PATH"));
+    std::string dir;
+    while (std::getline(path, dir, ':')) {
+        if (dir.empty()) continue;
+        const fs::path candidate = fs::path(dir) / command;
+        if (fs::exists(candidate, ec)) return candidate.string();
+    }
+    return {};
 }
 
 // ---------------------------------------------------------------------------
@@ -666,6 +926,281 @@ Fcitx5Info probe_fcitx5() {
     }
 
     return info;
+}
+
+std::optional<bool> qt6_from_directory_name(const std::string &name) {
+    if (name.find("qt6") != std::string::npos) return true;
+    if (name == "qt" || name.find("qt5") != std::string::npos) return false;
+    return std::nullopt;
+}
+
+Gtk3Cache worse_gtk3_cache(const Gtk3Cache &a, const Gtk3Cache &b) {
+    // Ordered worst-last: a problem outranks a healthy pairing, and a cache that
+    // registers the wrong module outranks having no cache at all, because the
+    // first is a machine that looks configured and is not.
+    const auto severity = [](Gtk3CacheState state) {
+        switch (state) {
+            case Gtk3CacheState::NoModule: return 0;
+            case Gtk3CacheState::Registered: return 1;
+            case Gtk3CacheState::NoCache: return 2;
+            case Gtk3CacheState::NotRegistered: return 3;
+        }
+        return 0;
+    };
+    return severity(b.state) > severity(a.state) ? b : a;
+}
+
+CacheRegistration immodules_cache_registration(const std::string &cache_contents,
+                                               const std::string &module_file) {
+    CacheRegistration registration;
+    for (const auto &raw : split_lines(cache_contents)) {
+        const std::string line = trim(raw);
+        // The header names gtk-query-immodules itself and lists every directory
+        // it searched. Matching in there would report a cache that registers no
+        // module at all as healthy — a comment is documentation, and GTK does
+        // not read it.
+        if (line.empty() || line[0] == '#') continue;
+
+        // Registration entries are the quoted module *path*; the lines after one
+        // describe the contexts it provides. Comparing basenames is exact here
+        // because the two names cannot contain each other: "im-fcitx.so" is not a
+        // substring of "im-fcitx5.so", nor the reverse.
+        if (!module_file.empty() && line.find(module_file) != std::string::npos) {
+            registration.lists_module = true;
+            continue;
+        }
+        if (line.find("fcitx") == std::string::npos) continue;
+        // Some other fcitx module is registered. Only a path line can name a
+        // file, and only the first one found is worth reporting.
+        if (registration.other_fcitx.empty() && line.find(".so") != std::string::npos) {
+            const auto slash = line.rfind('/');
+            const std::string tail =
+                slash == std::string::npos ? line : line.substr(slash + 1);
+            const auto quote = tail.find('"');
+            registration.other_fcitx = quote == std::string::npos ? tail : tail.substr(0, quote);
+        }
+    }
+    return registration;
+}
+
+HostInfo probe_host() {
+    HostInfo info;
+    for (const auto &root : host_lib_roots()) {
+        // Only roots that exist are recorded, so an empty list means the scan
+        // found nowhere to look rather than a host that ships no modules.
+        if (!dir_exists(root)) continue;
+        info.lib_roots.push_back(root.string());
+        scan_host_root(root, info);
+    }
+    return info;
+}
+
+// Program launchers that are not the program. `ldd /usr/bin/python3` answers for
+// the interpreter, which links no toolkit — and recording that as "this
+// application uses no GTK or Qt" is the one answer that must never be invented,
+// because it is what lets a real toolkit gap be dismissed as harmless.
+//
+// Matched on the basename so /usr/bin/env and env are the same entry: the strip
+// loop in parse_desktop_entry only removed the bare word, so an absolute
+// /usr/bin/env became the recorded "application".
+bool is_interpreter(const std::string &binary) {
+    const std::string name = fs::path(binary).filename().string();
+    for (const char *interpreter : {"env", "sh", "bash", "dash", "zsh", "fish", "python",
+                                    "python2", "python3", "perl", "ruby", "node", "gjs",
+                                    "java", "mono", "wine", "flatpak", "snap"}) {
+        if (name == interpreter) return true;
+    }
+    // Versioned interpreters (python3.12, ruby3.1) are the same story.
+    return name.rfind("python3.", 0) == 0 || name.rfind("python2.", 0) == 0;
+}
+
+// Prefixes a binary must live under before doctor will hand it to `ldd`.
+//
+// ldd resolves dependencies by running the target's ELF interpreter, so it is not
+// a read. The desktop entries it takes names from include the user-writable
+// ~/.local/share/applications, and those names are resolved through the caller's
+// PATH — without this restriction a diagnostic that exists to be run on a broken
+// machine would execute whatever those pointed at. Anything outside these
+// prefixes is still reported, as an application whose toolkit was not measured.
+bool under_system_prefix(const fs::path &binary) {
+    const std::string path = binary.lexically_normal().string();
+    for (const char *prefix : {"/usr/", "/opt/", "/bin/", "/sbin/"}) {
+        if (path.rfind(prefix, 0) == 0) return true;
+    }
+    return false;
+}
+
+DesktopEntry parse_desktop_entry(const std::string &contents) {
+    DesktopEntry entry;
+    bool in_entry = false;
+    std::string exec;
+    std::string type = "Application";  // the spec's default
+
+    for (const auto &raw : split_lines(contents)) {
+        const std::string line = trim(raw);
+        if (line.empty() || line[0] == '#') continue;
+        if (line.front() == '[') {
+            // Leaving [Desktop Entry] ends the group we care about: the
+            // [Desktop Action *] groups that follow carry an Exec of their own.
+            if (in_entry) break;
+            in_entry = (line == "[Desktop Entry]");
+            continue;
+        }
+        if (!in_entry) continue;
+
+        const auto equals = line.find('=');
+        if (equals == std::string::npos) continue;
+        const std::string key = trim(line.substr(0, equals));
+        const std::string value = trim(line.substr(equals + 1));
+
+        // First occurrence wins, and the localised forms (Name[vi]) are skipped:
+        // the report is about identifying an application, not displaying it in
+        // the user's locale.
+        if (key == "Name" && entry.name.empty()) entry.name = value;
+        else if (key == "Exec" && exec.empty()) exec = value;
+        else if (key == "Type") type = value;
+        else if ((key == "NoDisplay" || key == "Hidden") && value == "true") entry.hidden = true;
+    }
+
+    entry.is_application = (type == "Application");
+
+    auto tokens = split_exec(exec);
+    // A wrapper prefix names the environment, not the program: `env GDK_BACKEND=x
+    // gedit`, `/usr/bin/env GDK_BACKEND=x gedit` and `GDK_BACKEND=x gedit` all
+    // start gedit, and taking the first token blindly filed the application under
+    // "env" — which then measured as an application using no toolkit at all.
+    while (!tokens.empty()) {
+        const std::string &token = tokens.front();
+        const auto equals = token.find('=');
+        const auto slash = token.find('/');
+        const bool assignment = equals != std::string::npos &&
+                                (slash == std::string::npos || equals < slash);
+        if (fs::path(token).filename() == "env" || assignment) {
+            tokens.erase(tokens.begin());
+            continue;
+        }
+        break;
+    }
+    if (!tokens.empty()) entry.exec_binary = tokens.front();
+    return entry;
+}
+
+void record_ldd_output(const std::string &output, const std::vector<std::string> &measured,
+                       std::vector<NativeApp> &apps) {
+    std::map<std::string, NativeApp *> by_path;
+    for (auto &app : apps) by_path[app.binary] = &app;
+
+    // With one argument ldd prints no header, so there is nothing to match on and
+    // every line belongs to the only binary we asked about. Keyed on the argument
+    // list, not on apps.size(): applications deliberately left unmeasured are in
+    // `apps` too, so counting those made a genuine one-argument run attribute its
+    // output to nothing and report every application as unmeasured.
+    NativeApp *current = nullptr;
+    if (measured.size() == 1) {
+        const auto only = by_path.find(measured.front());
+        if (only != by_path.end()) current = only->second;
+    }
+    std::set<const NativeApp *> answered;
+
+    for (const auto &raw : split_lines(output)) {
+        // A header is a section start: unindented and ending in ':'. Dependency
+        // lines are indented with a tab, which is what keeps a library path
+        // ending in ':' from being read as one.
+        if (!raw.empty() && raw.front() != ' ' && raw.front() != '\t' && raw.back() == ':') {
+            const auto entry = by_path.find(raw.substr(0, raw.size() - 1));
+            current = entry != by_path.end() ? entry->second : nullptr;
+            continue;
+        }
+        if (current == nullptr) continue;
+
+        const std::string line = trim(raw);
+        if (line.empty()) continue;
+        // The section had readable content, so whatever it does or does not link
+        // is now known rather than unmeasured.
+        answered.insert(current);
+        for (const auto &library : kToolkitLibraries) {
+            if (line.find(library.soname) != std::string::npos) current->*library.flag = true;
+        }
+    }
+
+    for (auto &app : apps) {
+        if (answered.count(&app) == 0) app.toolkit_unknown = true;
+    }
+}
+
+bool host_has_toolkit_gap(const HostInfo &host) {
+    for (const HostToolkit *toolkit : {&host.gtk3, &host.gtk4, &host.qt5, &host.qt6}) {
+        if (toolkit->present && toolkit->module == ModuleKind::None) return true;
+    }
+    return false;
+}
+
+void probe_native_apps(HostInfo &host) {
+    std::error_code ec;
+    std::map<std::string, NativeApp> by_path;  // resolved path -> application
+    for (const auto &dir : desktop_entry_dirs()) {
+        for (const auto &file : fs::directory_iterator(dir, ec)) {
+            if (file.path().extension() != ".desktop") continue;
+
+            const DesktopEntry entry = parse_desktop_entry(read_file(file.path()));
+            if (!entry.is_application || entry.hidden || entry.exec_binary.empty()) continue;
+
+            const std::string resolved = resolve_on_path(entry.exec_binary);
+            // A binary the entry names but that is not installed cannot be the
+            // application that fails to type, and passing it to ldd would only
+            // produce a section we then have to discard.
+            if (resolved.empty() || !fs::exists(resolved, ec)) continue;
+            // Several entries routinely point at one binary (a browser and its
+            // private-window entry). Keying on the real path also collapses the
+            // /usr/bin symlink farms, so ldd is asked once per program.
+            const fs::path canonical = fs::canonical(resolved, ec);
+            const std::string key = ec ? resolved : canonical.string();
+            ec.clear();
+
+            NativeApp app;
+            app.binary = key;
+            app.name = entry.name.empty() ? entry.exec_binary : entry.name;
+            // Two kinds of application we refuse to measure rather than measure
+            // wrongly: a launcher whose ldd output describes the interpreter
+            // instead of the program, and a binary outside the system prefixes,
+            // which ldd would have to execute (see under_system_prefix).
+            app.toolkit_unknown = is_interpreter(key) || !under_system_prefix(key);
+            by_path.emplace(key, std::move(app));
+        }
+        ec.clear();
+    }
+
+    // Nothing inspected, so nothing measured: leaving apps_scanned false is what
+    // stops judge_host from reading an empty list as proof that no application
+    // uses the missing toolkit. Setting it up front turned "we could not look"
+    // into "we looked and found nobody", which cleared a real failure.
+    if (by_path.empty()) return;
+
+    std::vector<std::string> measured;
+    std::string arguments;
+    for (auto &pair : by_path) {
+        if (!pair.second.toolkit_unknown) {
+            measured.push_back(pair.first);
+            arguments += " " + shell_quote(pair.first);
+        }
+        host.apps.push_back(std::move(pair.second));
+    }
+    host.apps_scanned = true;
+
+    // No ldd, or nothing we are willing to run it on: the applications are known,
+    // their toolkits are not. Every one is an unmeasured application rather than
+    // an application that uses no toolkit.
+    if (measured.empty() || !have_command("ldd")) {
+        for (auto &app : host.apps) app.toolkit_unknown = true;
+        return;
+    }
+
+    // One ldd for the whole list. Per application it was one subprocess each,
+    // which on a normal desktop is a few hundred spawns and seconds of wall
+    // clock; ldd prints a "<path>:" header per file precisely so this works.
+    // The budget is raised because it is now one call doing all the work.
+    const CommandResult result = run_capturing_status("ldd" + arguments, kLddTimeoutSeconds);
+    record_ldd_output(result.output, measured, host.apps);
 }
 
 void probe_flatpak(Report &report) {

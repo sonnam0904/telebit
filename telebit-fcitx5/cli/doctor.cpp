@@ -169,8 +169,8 @@ void render_pretty(const Output &out, std::ostream &os, bool colour, std::size_t
     }
 
     os << "\n" << dim
-              << "Phần host (locale, ldd, cache immodule) đã được fcitx5-diagnose lo — chạy nó "
-                 "nếu cần chi tiết."
+              << "Locale và cấu hình chi tiết của fcitx5 đã được fcitx5-diagnose lo — chạy nó nếu "
+                 "cần phần đó."
               << reset << "\n";
 }
 
@@ -207,12 +207,18 @@ void render_markdown(const Output &out, std::ostream &os) {
             os << "- " << suggestion << "\n";
         }
     }
-    os << "\n_Phần host do `fcitx5-diagnose` phụ trách._\n";
+    os << "\n_Locale và cấu hình chi tiết của fcitx5 do `fcitx5-diagnose` phụ trách._\n";
 }
 
 int run(const Options &options) {
     Report report;
     report.session = probe_session();
+    report.host = probe_host();
+    // The application scan costs one ldd over every installed desktop entry, and
+    // the only thing it changes the reading of is a toolkit gap — with a module
+    // for everything installed, knowing which apps are GTK4 answers no question
+    // anyone asked. So it is paid for only when there is a gap to explain.
+    if (host_has_toolkit_gap(report.host)) probe_native_apps(report.host);
     probe_flatpak(report);
     probe_snap(report);
     if (options.deep) {
@@ -224,6 +230,10 @@ int run(const Options &options) {
     Output out;
     judge_session(report.session, out);
     judge_fcitx5(report.fcitx5, report.session, report, out);
+    // Host before sandbox: the natively installed applications are the ones a
+    // missing module actually breaks, and the fix for them is a package rather
+    // than the dead end a sandbox gap usually is.
+    judge_host(report.host, report.session, out);
     judge_sandboxes(report, report.session, out);
 
     if (!options.deep && (report.flatpak_present || report.snap_present)) {

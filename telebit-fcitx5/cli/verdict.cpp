@@ -251,10 +251,40 @@ void judge_fcitx5(const Fcitx5Info &fcitx5, const SessionInfo &session, const Re
         std::any_of(report.runtimes.begin(), report.runtimes.end(), [](const SandboxRuntime &r) {
             return r.kind == "snap" && r.modules.gtk3 == ModuleKind::Fcitx4;
         });
-    if (snap_needs_fcitx4 && !fcitx5.bus_fcitx4) {
+    // The host reaches the same state whenever the module installed for a toolkit
+    // is the fcitx4-era one (the old fcitx-frontend-* packages), which still
+    // answers GTK_IM_MODULE=fcitx. Checking snaps alone meant a natively
+    // installed desktop in exactly that state was told nothing at all.
+    //
+    // Gated on the variable that would load it, because a module nothing routes
+    // to is not load-bearing: on Wayland with the IM variables unset, GTK and Qt
+    // reach the compositor directly and never open the fcitx4 module — judge_host
+    // says exactly that for the same state, and an ungated Fail here made
+    // `telebit doctor` exit 1 on a machine where nothing was wrong.
+    std::vector<std::string> host_legacy;
+    const bool gtk_routed = classify_im_var(session.gtk_im_module, false) == VarState::Correct;
+    const bool qt_routed = classify_im_var(session.qt_im_module, false) == VarState::Correct;
+    if (gtk_routed) {
+        if (report.host.gtk3.module == ModuleKind::Fcitx4) host_legacy.emplace_back("GTK3");
+        if (report.host.gtk4.module == ModuleKind::Fcitx4) host_legacy.emplace_back("GTK4");
+    }
+    if (qt_routed) {
+        if (report.host.qt5.module == ModuleKind::Fcitx4) host_legacy.emplace_back("Qt5");
+        if (report.host.qt6.module == ModuleKind::Fcitx4) host_legacy.emplace_back("Qt6");
+    }
+    if ((snap_needs_fcitx4 || !host_legacy.empty()) && !fcitx5.bus_fcitx4) {
+        std::vector<std::string> who;
+        if (snap_needs_fcitx4) who.emplace_back("platform snap chỉ có module GTK3 đời fcitx4");
+        // Names the toolkits that are actually affected: hardcoding "GTK3" told a
+        // user whose fcitx4-era module was the Qt5 plugin to look at GTK.
+        if (!host_legacy.empty()) {
+            who.emplace_back("module " + join(host_legacy, "/") +
+                             " trên host là bản đời fcitx4");
+        }
         s.rows.push_back({Status::Fail, "Frontend fcitx4", "tắt",
-                          "Platform snap chỉ có module GTK3 đời fcitx4, nên app Snap cần addon "
-                          "Fcitx4 Frontend của fcitx5 mới gõ được."});
+                          join(who, ", và ") +
+                              ", nên ứng dụng dùng các toolkit đó cần addon Fcitx4 Frontend của "
+                              "fcitx5 mới gõ được."});
         out.suggestions.push_back(
             "Bật addon Fcitx4 Frontend trong fcitx5-configtool → Addons, rồi fcitx5 -r.");
     }
@@ -368,6 +398,341 @@ RuntimeVerdict judge_runtime(const SandboxRuntime &runtime, const SessionInfo &s
         note += fragment;
     }
     return {{status, runtime_label(runtime.kind, runtime.id), value, note}, unfixable_gap};
+}
+
+AffectedApps apps_using(const HostInfo &host, bool NativeApp::*toolkit) {
+    AffectedApps affected;
+    affected.scanned = host.apps.size();
+    for (const auto &app : host.apps) {
+        if (app.toolkit_unknown) {
+            ++affected.unknown;
+            continue;
+        }
+        if (app.*toolkit) affected.names.push_back(app.name);
+    }
+    std::sort(affected.names.begin(), affected.names.end());
+    return affected;
+}
+
+namespace {
+
+// How many application names a row shows before summarising the rest. Eight fits
+// the value column at any terminal width the report supports; the remainder is
+// always counted out loud, because a list silently cut short reads as the whole
+// answer.
+constexpr std::size_t kMaxNamedApps = 8;
+
+std::string app_list_value(const AffectedApps &affected) {
+    std::vector<std::string> shown(
+        affected.names.begin(),
+        affected.names.begin() +
+            static_cast<std::ptrdiff_t>(std::min(kMaxNamedApps, affected.names.size())));
+    std::string value = join(shown, ", ");
+    if (affected.names.size() > kMaxNamedApps) {
+        value += " … và " + std::to_string(affected.names.size() - kMaxNamedApps) + " app nữa";
+    }
+    return value;
+}
+
+// What the scan could not see. Every row built from the application list carries
+// this, so a machine whose apps are mostly wrapper scripts never gets a confident
+// answer it did not earn.
+std::string app_scan_coverage(const AffectedApps &affected) {
+    std::string note = "Dò " + std::to_string(affected.scanned) +
+                       " ứng dụng cài trực tiếp (từ desktop entry của /usr/share/applications, "
+                       "không tính Flatpak/Snap)";
+    if (affected.unknown == 0) return note + ".";
+    return note + "; " + std::to_string(affected.unknown) +
+           " app không đọc được toolkit (script bao ngoài, hoặc tự dlopen toolkit như Firefox, "
+           "LibreOffice) nên danh sách này có thể còn thiếu.";
+}
+
+}  // namespace
+
+void judge_host(const HostInfo &host, const SessionInfo &session, Output &out) {
+    Section &s = out.section("Ứng dụng cài trực tiếp (.deb/.rpm)");
+
+    // No root to scan is a failed measurement. Reporting the module matrix of a
+    // scan that never happened would announce four missing modules on a machine
+    // that has them all.
+    if (host.lib_roots.empty()) {
+        s.rows.push_back({Status::Warn, "Module trên host", "không đọc được",
+                          "Không thấy thư mục library nào (/usr/lib, /usr/lib64, /usr/local/lib) "
+                          "để dò module, nên phần này không kết luận gì."});
+        return;
+    }
+
+    const bool wayland = session.display_server == "wayland";
+
+    // One toolkit the host may have, the package that ships its module, and the
+    // flag on NativeApp that says an application links it. The member pointer is
+    // what lets the affected-application list be derived from this one table
+    // instead of a second switch that could disagree with it.
+    struct Toolkit {
+        const char *name;
+        const char *debian_package;
+        HostToolkit state;
+        bool NativeApp::*used_by;
+    };
+
+    // One row per toolkit family, each judged against the variable that family
+    // actually reads. Which of GTK_IM_MODULE / QT_IM_MODULE points at fcitx is
+    // what decides whether a missing module is fatal or irrelevant, so a single
+    // row covering both would carry one status for two unrelated verdicts — a
+    // broken GTK and a healthy Qt came out as one red line whose note had to
+    // explain both, and the four cells no longer fit the value column.
+    struct Family {
+        const char *label;
+        const char *variable_name;
+        std::string variable;
+        std::vector<Toolkit> toolkits;
+    };
+    const std::vector<Family> families = {
+        {"Module GTK trên host",
+         "GTK_IM_MODULE",
+         session.gtk_im_module,
+         {{"GTK3", "fcitx5-frontend-gtk3", host.gtk3, &NativeApp::gtk3},
+          {"GTK4", "fcitx5-frontend-gtk4", host.gtk4, &NativeApp::gtk4}}},
+        {"Module Qt trên host",
+         "QT_IM_MODULE",
+         session.qt_im_module,
+         {{"Qt5", "fcitx5-frontend-qt5", host.qt5, &NativeApp::qt5},
+          {"Qt6", "fcitx5-frontend-qt6", host.qt6, &NativeApp::qt6}}},
+    };
+
+    std::vector<std::string> missing;
+    std::vector<std::string> packages;
+    bool coverage_explained = false;
+
+    for (const auto &family : families) {
+        std::string value;
+        std::vector<std::string> gaps;
+        std::vector<std::string> legacy;
+        std::vector<std::string> legacy_packages;
+        for (const auto &toolkit : family.toolkits) {
+            if (!value.empty()) value += "  ·  ";
+            value += std::string(toolkit.name) + " " +
+                     module_cell(toolkit.state.module, toolkit.state.present);
+            // Only a toolkit the host actually has can be missing its module.
+            if (toolkit.state.present && toolkit.state.module == ModuleKind::None) {
+                gaps.emplace_back(toolkit.name);
+                packages.emplace_back(toolkit.debian_package);
+            }
+            if (toolkit.state.module == ModuleKind::Fcitx4) {
+                legacy.emplace_back(toolkit.name);
+                legacy_packages.emplace_back(toolkit.debian_package);
+            }
+        }
+
+        // The application list is read *before* the verdict, not after it. Pushing
+        // the row first and listing applications afterwards meant the status was
+        // already Fail by the time the scan reported that nothing on the machine
+        // uses the missing toolkit — the row said "broken" while the row under it
+        // said "affects no application", and the exit status backed the wrong one.
+        struct GapApps {
+            const char *toolkit;
+            bool NativeApp::*used_by;
+            AffectedApps affected;
+        };
+        std::vector<GapApps> gap_apps;
+        if (host.apps_scanned) {
+            for (const auto &toolkit : family.toolkits) {
+                if (!(toolkit.state.present && toolkit.state.module == ModuleKind::None)) continue;
+                gap_apps.push_back({toolkit.name, toolkit.used_by,
+                                    apps_using(host, toolkit.used_by)});
+            }
+        }
+        // Conclusive only when applications were actually inspected AND the scan
+        // answered for every one it found: one unreadable wrapper script is enough
+        // to make "nothing uses GTK4" a guess, an empty list is not evidence at
+        // all, and neither may clear a failure.
+        const bool gap_hits_nothing =
+            !gap_apps.empty() &&
+            std::all_of(gap_apps.begin(), gap_apps.end(), [](const GapApps &entry) {
+                return entry.affected.scanned > 0 && entry.affected.names.empty() &&
+                       entry.affected.unknown == 0;
+            });
+
+        Status status = Status::Ok;
+        std::vector<std::string> notes;
+
+        if (!gaps.empty()) {
+            const std::string list = join(gaps, "/");
+            missing.insert(missing.end(), gaps.begin(), gaps.end());
+
+            if (classify_im_var(family.variable, false) == VarState::Correct) {
+                // The variable names a module that is not installed. The toolkit
+                // does not fall back to the compositor here — it falls back to its
+                // own built-in context — so this is broken right now, Wayland
+                // included. That is also why a host gap can reach Fail while the
+                // identical sandbox gap never does: there the app's toolkit is
+                // unknown, here the session has already declared what it wants.
+                //
+                // Unless the scan proved there is nobody to break: the downgrade
+                // is applied only to this branch, because it is the only one that
+                // would otherwise claim a failure. Applied ahead of the Wayland
+                // case below it would *raise* a harmless Info to a warning.
+                if (gap_hits_nothing) {
+                    status = Status::Warn;
+                    notes.push_back("Thiếu module " + list + ", và " + family.variable_name +
+                                    " đang trỏ vào nó, nhưng không ứng dụng cài trực tiếp nào trên "
+                                    "máy dùng " + list +
+                                    " — nên đây là rủi ro chưa xảy ra, không phải lỗi đang hỏng. "
+                                    "Cài một app " + list + " thì nó thành lỗi thật.");
+                } else {
+                    status = Status::Fail;
+                    notes.push_back(std::string(family.variable_name) + "=" + family.variable +
+                                    " trỏ tới module " + list + " không có trên máy, nên ứng dụng " +
+                                    list +
+                                    " cài trực tiếp rơi về bộ gõ mặc định của toolkit và không gõ "
+                                    "được — kể cả trên Wayland, vì biến này chặn luôn đường "
+                                    "text-input-v3.");
+                }
+            } else if (wayland) {
+                status = Status::Info;
+                notes.push_back("Thiếu module " + list + ", nhưng " + family.variable_name +
+                                " đang để trống nên ứng dụng " + list +
+                                " đi thẳng text-input-v3 qua compositor.");
+            } else {
+                // On X11 there is no other path, but judge_session already fails
+                // for the empty variable — this row carries the other half of the
+                // fix rather than reporting the same incident twice.
+                status = Status::Warn;
+                notes.push_back("Trên X11 ứng dụng " + list +
+                                " cài trực tiếp không có module nào của fcitx5 để nạp.");
+            }
+        }
+
+        // A module from the fcitx4 era still satisfies the variable, so nothing
+        // above notices it. It only works while fcitx5's compatibility frontend
+        // is loaded, which judge_fcitx5 checks — the row's job is to say why that
+        // frontend is suddenly load-bearing on a machine with no snaps at all.
+        if (!legacy.empty()) {
+            // Raised from Info as well as Ok, and never from Fail. Guarding on Ok
+            // alone left a row that carries an actionable suggestion wearing the
+            // `·` glyph the legend defines as "not an analysis result" — the same
+            // guard judge_session uses spells out both.
+            if (status == Status::Ok || status == Status::Info) status = Status::Warn;
+            notes.push_back("Module " + join(legacy, "/") +
+                            " là bản đời fcitx4 (gói fcitx-frontend-* cũ). Nó vẫn đăng ký context "
+                            "id \"fcitx\" nên biến trỏ vào đây, và chỉ chạy được khi addon Fcitx4 "
+                            "Frontend của fcitx5 đang bật.");
+            out.suggestions.push_back(
+                "Module " + join(legacy, "/") +
+                " trên máy là bản fcitx4. Cài bản fcitx5 (Debian/Ubuntu: `sudo apt install " +
+                join(legacy_packages, " ") +
+                "`) để ứng dụng đi đường native thay vì qua lớp tương thích fcitx4.");
+        }
+
+        s.rows.push_back({status, family.label, value, join(notes, " ")});
+
+        // Naming the applications is what turns "GTK4 thiếu" from a risk into a
+        // finding with a subject. Only positive matches are ever listed: an
+        // application whose toolkit could not be read is counted in the note, not
+        // described as unaffected — claiming Firefox does not use GTK because its
+        // launcher dlopens libxul would be exactly the confident nonsense the
+        // sandbox section refuses to print.
+        for (const auto &entry : gap_apps) {
+            const AffectedApps &affected = entry.affected;
+            const std::string label = std::string("app dùng ") + entry.toolkit;
+
+            // One scan, one description of its limits. Repeating it under every
+            // affected toolkit filled the section with four identical lines and
+            // pushed the findings off the screen.
+            std::string note;
+            if (!coverage_explained) {
+                note = app_scan_coverage(affected);
+                coverage_explained = true;
+            }
+
+            if (affected.names.empty()) {
+                // "No application links this toolkit" is a claim, and it needs
+                // applications to have been inspected. With nothing inspected the
+                // row says that instead — asserting the claim from an empty list
+                // is what let a real failure read as harmless.
+                if (affected.scanned == 0) {
+                    append_note(note,
+                                "Không dò được ứng dụng nào để đối chiếu, nên chưa kết luận được "
+                                "ô \"thiếu\" ở trên có ảnh hưởng ứng dụng nào không.");
+                } else if (affected.unknown == 0) {
+                    append_note(note,
+                                "Không app nào liên kết toolkit này, nên ô \"thiếu\" ở trên hiện "
+                                "chưa ảnh hưởng ứng dụng nào.");
+                }
+                s.rows.push_back({affected.scanned == 0 ? Status::Warn : Status::Info, label,
+                                  affected.scanned == 0 ? "không dò được app nào"
+                                                        : "không thấy app nào",
+                                  note, 1});
+                continue;
+            }
+            // Same finding as the row above, itemised — so it wears the same
+            // status rather than a milder one of its own.
+            s.rows.push_back({status, label, app_list_value(affected), note, 1});
+        }
+    }
+
+    if (!packages.empty()) {
+        // Both naming schemes are named because nothing on the filesystem says
+        // which one this machine uses, and Fedora/Arch ship one package per
+        // toolkit family rather than one per version.
+        out.suggestions.push_back(
+            "Thiếu module client cho " + join(missing, ", ") +
+            ". Debian/Ubuntu: `sudo apt install " + join(packages, " ") +
+            "`. Fedora/openSUSE/Arch: module nằm chung trong `fcitx5-gtk` (GTK) và `fcitx5-qt` "
+            "(Qt). Cài xong thì đăng xuất rồi đăng nhập lại.");
+    }
+
+    // One verdict from one library root, so the file named as installed and the
+    // file named as stale always come from the same place. NoModule needs no row:
+    // the module matrix above already says everything, and a cache that registers
+    // nothing is then simply correct.
+    const Gtk3Cache &cache = host.gtk3_cache;
+    const bool gtk_wants_fcitx = classify_im_var(session.gtk_im_module, false) == VarState::Correct;
+    const std::string module_file = display_or(cache.module_file, "fcitx");
+
+    switch (cache.state) {
+        case Gtk3CacheState::NoModule:
+            break;
+        case Gtk3CacheState::Registered:
+            s.rows.push_back({Status::Ok, "Cache immodule GTK3", "đăng ký " + module_file, ""});
+            break;
+        case Gtk3CacheState::NoCache:
+            s.rows.push_back({Status::Warn, "Cache immodule GTK3", "không có file cache",
+                              "GTK3 chỉ nạp immodule nào được liệt kê trong immodules.cache, nên "
+                              "module " + module_file + " sẽ không bao giờ được nạp."});
+            out.suggestions.push_back(
+                "Dựng lại cache immodule của GTK3: `sudo gtk-query-immodules-3.0 --update-cache` "
+                "(trên Debian/Ubuntu lệnh này nằm trong /usr/lib/<triplet>/libgtk-3-0*/), hoặc cài "
+                "lại gói module: `sudo apt install --reinstall fcitx5-frontend-gtk3`.");
+            break;
+        case Gtk3CacheState::NotRegistered: {
+            // Naming the file the cache still points at is the whole diagnosis: a
+            // cache holding im-fcitx.so beside an installed im-fcitx5.so is not
+            // "no fcitx registered", it is the previous package's cache, and
+            // saying so is what tells the user which command to re-run.
+            const bool stale_entry = !cache.other_fcitx.empty();
+            std::string note = "Module " + module_file +
+                               " có trên đĩa nhưng cache không đăng ký nó, và GTK3 chỉ nạp những gì "
+                               "cache liệt kê.";
+            if (stale_entry) {
+                note += " Cache đang đăng ký " + cache.other_fcitx +
+                        " — bản module của gói cũ, tức là cache chưa được dựng lại sau khi cài "
+                        "module mới.";
+            } else {
+                note += " Cache thường bị cũ khi module được copy tay hoặc khi trigger của gói "
+                        "không chạy.";
+            }
+            s.rows.push_back({gtk_wants_fcitx ? Status::Fail : Status::Warn, "Cache immodule GTK3",
+                              stale_entry ? "đăng ký " + cache.other_fcitx
+                                          : std::string("không đăng ký module"),
+                              note});
+            out.suggestions.push_back(
+                "Dựng lại cache immodule của GTK3: `sudo gtk-query-immodules-3.0 --update-cache` "
+                "(trên Debian/Ubuntu lệnh này nằm trong /usr/lib/<triplet>/libgtk-3-0*/), hoặc cài "
+                "lại gói module: `sudo apt install --reinstall fcitx5-frontend-gtk3`.");
+            break;
+        }
+    }
 }
 
 void judge_sandboxes(const Report &report, const SessionInfo &session, Output &out) {

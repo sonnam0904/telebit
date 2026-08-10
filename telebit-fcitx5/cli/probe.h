@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <set>
@@ -101,6 +102,98 @@ struct Fcitx5Info {
     std::string addon_path;
 };
 
+// One toolkit as it exists on the host filesystem — the root that applications
+// installed from a .deb / .rpm actually see. `present` is what separates "this
+// machine has the toolkit but no module to drive it" from "nothing here uses
+// that toolkit", exactly as in ModuleSet.
+struct HostToolkit {
+    bool present = false;
+    ModuleKind module = ModuleKind::None;
+};
+
+// One application installed natively (.deb / .rpm / pacman), as named by its
+// desktop entry, and the toolkits its executable really links.
+//
+// This exists to turn "GTK4 thiếu" from a risk into a named incident: without it
+// the report can say a toolkit has no module but not who that costs, which is
+// the same dead end the sandbox section is stuck with — except here the answer is
+// readable off the binary.
+struct NativeApp {
+    std::string name;    // Name= from the desktop entry, else the binary name
+    std::string binary;  // resolved executable path, deduplicated
+
+    bool gtk3 = false;
+    bool gtk4 = false;
+    bool qt5 = false;
+    bool qt6 = false;
+
+    // ldd could not answer: a shell wrapper (soffice, most Python apps), or a
+    // small launcher that dlopens its toolkit later (Firefox loads GTK through
+    // libxul). Such an app is never reported as unaffected — only the positive
+    // matches above are ever claimed, and this count is what stops the report
+    // from presenting a partial list as a complete one.
+    bool toolkit_unknown = false;
+};
+
+// How one library root pairs its GTK3 immodule with its immodules.cache.
+//
+// GTK3 loads an immodule only when the cache lists it; the .so being on disk is
+// not enough. A cache written before the module arrived — a hand-copied build, a
+// package whose dpkg trigger never ran, an install into /usr/local — silently
+// kills input in every native GTK3 app, and no other row in the report shows it.
+// GTK4 needs no equivalent check: it scans its immodules directory directly.
+enum class Gtk3CacheState {
+    NoModule,       // no fcitx immodule here, so there is nothing to register
+    Registered,     // the cache lists the module that is installed
+    NoCache,        // a module with no cache file at all beside it
+    NotRegistered,  // a cache that does not list the installed module
+};
+
+// The verdict for one library root, kept whole rather than as separate fields.
+//
+// The comparison is against the file that is actually installed, not against the
+// word "fcitx": a cache still registering the fcitx4-era im-fcitx.so while
+// im-fcitx5.so sits unregistered beside it is exactly the stale cache this
+// exists to catch, and a substring test called it healthy.
+//
+// Whole, because the two strings only mean anything together. Aggregating them
+// field by field across library roots let `module_file` come from one root and
+// `other_fcitx` from another, producing a row that named the same file as both
+// the installed module and the stale entry the user should replace.
+struct Gtk3Cache {
+    Gtk3CacheState state = Gtk3CacheState::NoModule;
+    std::string module_file;   // the installed module in that root
+    std::string other_fcitx;   // a different fcitx module its cache registers
+};
+
+// The host root. Kept as its own struct rather than reusing ModuleSet because
+// the two questions differ in one place that matters: a Flatpak runtime or a
+// platform snap ships exactly one Qt, while a host routinely carries Qt5 and
+// Qt6 side by side from two separately installable packages
+// (fcitx5-frontend-qt5 / -qt6 on Debian). Collapsing them into one cell would
+// report a missing plugin the user has no way to locate — and call a machine
+// broken for lacking a Qt5 plugin when every Qt app on it is Qt6.
+struct HostInfo {
+    HostToolkit gtk3;
+    HostToolkit gtk4;
+    HostToolkit qt5;
+    HostToolkit qt6;
+
+    // The GTK3 module/cache pairing, worst library root wins. See Gtk3Cache.
+    Gtk3Cache gtk3_cache;
+
+    // Library roots that exist on this machine, in scan order. Empty means
+    // there was nowhere to look, which is a failed measurement rather than a
+    // host without modules — reporting the second would invent a defect.
+    std::vector<std::string> lib_roots;
+
+    // Installed applications, filled by probe_native_apps() only when a toolkit
+    // gap made the scan worth its cost. Empty therefore means "not looked at",
+    // never "no applications installed" — the report has to say which.
+    std::vector<NativeApp> apps;
+    bool apps_scanned = false;
+};
+
 // A Flatpak runtime or a Snap platform snap: the filesystem an app actually
 // sees, and therefore the thing that decides whether an IM module exists.
 struct SandboxRuntime {
@@ -148,6 +241,7 @@ struct SandboxApp {
 struct Report {
     SessionInfo session;
     Fcitx5Info fcitx5;
+    HostInfo host;
     std::vector<SandboxRuntime> runtimes;
     std::vector<SandboxApp> apps;
     bool flatpak_present = false;
@@ -282,8 +376,109 @@ std::string compositor_family(const std::string &comm);
 // drive the IME would leave them unable to type.
 bool compositor_handles_ime_natively(const std::string &family);
 
+// Which Qt a directory that is itself a Qt tree serves, read off its name, or
+// nullopt when the name says nothing.
+//
+// Exposed because it is the fix for a silent misattribution: the scan enumerates
+// <libdir>/qt6 as a library base in its own right, so the bare "plugins" layout
+// entry turned its Qt6 plugin into the Qt5 answer, and a machine with no Qt5
+// plugin at all was reported healthy.
+std::optional<bool> qt6_from_directory_name(const std::string &name);
+
+// Keeps the worse of two library roots' GTK3 pairings.
+//
+// The aggregation has to prefer the *problem*: a healthy pairing in one root says
+// nothing about a broken one in another, and OR-ing "healthy" across roots let a
+// good i386 cache declare a stale x86_64 cache fine — masking the failure the
+// check exists for. Whole records, never field by field, so the installed module
+// and the stale entry always describe the same root.
+Gtk3Cache worse_gtk3_cache(const Gtk3Cache &a, const Gtk3Cache &b);
+
+// What a GTK3 immodules.cache says about the module that is installed.
+struct CacheRegistration {
+    bool lists_module = false;   // the cache registers `module_file` itself
+    std::string other_fcitx;     // a *different* fcitx module it registers instead
+};
+
+// Reads one immodules.cache against the module file found on disk. Only the
+// quoted entries count: the header gtk-query-immodules writes names the generator
+// and every directory it searched, and matching there would call a cache that
+// registers nothing at all healthy.
+//
+// `other_fcitx` is the useful half of the diagnosis. A cache holding
+// im-fcitx.so while im-fcitx5.so is what is installed is not "no fcitx in the
+// cache" — it is a cache from the previous package, and naming the file it still
+// points at is what turns the row into something the user can act on.
+//
+// Exposed for testing because the failure this guards against is invisible from
+// the outside: the module file is present, the cache is present, and GTK3 still
+// loads nothing of ours.
+CacheRegistration immodules_cache_registration(const std::string &cache_contents,
+                                               const std::string &module_file);
+
 SessionInfo probe_session();
 Fcitx5Info probe_fcitx5();
+
+// The host library roots, for applications installed natively (.deb / .rpm /
+// pacman) rather than into a sandbox.
+HostInfo probe_host();
+
+// The [Desktop Entry] group of one .desktop file, reduced to what decides
+// whether the entry names a real application and which binary it starts.
+struct DesktopEntry {
+    std::string name;
+    // First Exec token with the field codes (%U, %f) and any `env VAR=x` prefix
+    // removed. Still unresolved: it may be a bare command name.
+    std::string exec_binary;
+    bool is_application = false;
+    // NoDisplay=true / Hidden=true. These are MIME handlers and settings panels,
+    // not applications the user launches, and counting them would inflate every
+    // number in the report.
+    bool hidden = false;
+};
+
+// Only the [Desktop Entry] group is read. A .desktop file also carries
+// [Desktop Action *] groups, each with an Exec of its own, and taking the last
+// Exec in the file would start the wrong binary.
+DesktopEntry parse_desktop_entry(const std::string &contents);
+
+// Whether a binary is a launcher rather than the program: `ldd` on an
+// interpreter answers for the interpreter, which links no toolkit, and recording
+// that as "this application uses no GTK or Qt" is the one answer that must never
+// be invented — it is what lets a real toolkit gap be dismissed as harmless.
+bool is_interpreter(const std::string &binary);
+
+// Whether doctor is willing to hand this binary to `ldd`. ldd resolves
+// dependencies by running the target's ELF interpreter, so it is not a read, and
+// the names come from desktop entries in user-writable directories resolved
+// through the caller's PATH. Only binaries under the system prefixes are
+// measured; the rest are reported as applications whose toolkit is unknown.
+bool under_system_prefix(const std::filesystem::path &binary);
+
+// Records the output of one `ldd <binary>...` run onto apps, matched by path.
+// `measured` is the argument list that run was given, in order.
+//
+// With several arguments ldd prefixes each file with "<path>:", and a file it
+// cannot read gets that header and nothing else — the explanation goes to stderr,
+// which every probe here drops. An empty section is therefore how a wrapper
+// script looks, and it must land in toolkit_unknown rather than being read as an
+// application that uses no toolkit at all.
+//
+// With exactly one argument ldd prints no header, which is why `measured` is
+// passed at all: the lone answer has to be attributed by argument, since `apps`
+// also holds applications that were deliberately never measured.
+void record_ldd_output(const std::string &output, const std::vector<std::string> &measured,
+                       std::vector<NativeApp> &apps);
+
+// Whether some toolkit on the host has no fcitx module for it. This is the only
+// condition under which the application scan changes any reading, so it is what
+// gates paying for it.
+bool host_has_toolkit_gap(const HostInfo &host);
+
+// Fills host.apps: every desktop entry's binary, and the toolkits it links.
+// One `ldd` call covers the whole list, so the cost is a single subprocess
+// rather than one per application.
+void probe_native_apps(HostInfo &host);
 
 // Fills report.runtimes / report.apps for whichever of the two packaging
 // systems is installed.

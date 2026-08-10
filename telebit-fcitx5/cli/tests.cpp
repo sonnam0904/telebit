@@ -174,6 +174,20 @@ SandboxRuntime snap_platform_runtime() {
     return runtime;
 }
 
+// A host with every client module installed: what a working Debian desktop with
+// fcitx5-frontend-all looks like.
+HostInfo healthy_host() {
+    HostInfo host;
+    host.lib_roots.emplace_back("/usr/lib");
+    host.gtk3 = {true, ModuleKind::Fcitx5};
+    host.gtk4 = {true, ModuleKind::Fcitx5};
+    host.qt5 = {true, ModuleKind::Fcitx5};
+    host.qt6 = {true, ModuleKind::Fcitx5};
+    host.gtk3_cache.state = Gtk3CacheState::Registered;
+    host.gtk3_cache.module_file = "im-fcitx5.so";
+    return host;
+}
+
 void test_compositor_identification() {
     check(compositor_family("gnome-shell") == "mutter",
           "GNOME's compositor runs as gnome-shell but is called mutter");
@@ -255,6 +269,552 @@ void test_missing_module_on_wayland_is_harmless() {
     check(!verdict.unfixable_gap,
           "on Wayland the missing GTK4/Qt modules are bypassed by text-input-v3");
     check(verdict.row.status != Status::Fail, "so nothing here is a failure");
+}
+
+// ---------------------------------------------------------------------------
+// Host (.deb / .rpm)
+// ---------------------------------------------------------------------------
+
+void test_healthy_host_is_clean() {
+    Output out;
+    judge_host(healthy_host(), session_on("x11", "mutter"), out);
+    const Row *gtk = find_row(out, "Module GTK trên host");
+    const Row *qt = find_row(out, "Module Qt trên host");
+    check(gtk != nullptr && gtk->status == Status::Ok && qt != nullptr && qt->status == Status::Ok,
+          "a host with a module for every installed toolkit has nothing to report");
+    check(gtk->value.find("GTK3 fcitx5") != std::string::npos &&
+              qt->value.find("Qt6 fcitx5") != std::string::npos,
+          "and both matrices name their two toolkits");
+    const Row *cache = find_row(out, "Cache immodule GTK3");
+    check(cache != nullptr && cache->status == Status::Ok, "the immodule cache is checked too");
+    check(out.suggestions.empty(), "nothing to suggest");
+}
+
+void test_host_gap_with_the_variable_set_fails_even_on_wayland() {
+    // fcitx5-frontend-gtk4 not installed while the session asks for it. Telebit's
+    // own environment.d drop-in sets GTK_IM_MODULE=fcitx, so this is the state a
+    // user lands in by installing telebit without the GTK4 module — and it breaks
+    // native GTK4 apps on Wayland too: the variable names a module GTK cannot
+    // find, so GTK falls back to its built-in simple context instead of the
+    // Wayland one, and text-input-v3 is never reached.
+    HostInfo host = healthy_host();
+    host.gtk4.module = ModuleKind::None;
+
+    Output out;
+    judge_host(host, session_on("wayland", "kwin"), out);
+    const Row *row = find_row(out, "Module GTK trên host");
+    check(row != nullptr && row->status == Status::Fail,
+          "a variable pointing at a module that is not installed is broken now, Wayland included");
+    check(row->note.find("GTK_IM_MODULE=fcitx") != std::string::npos,
+          "and the note names the variable that points nowhere");
+    bool named_the_package = false;
+    for (const auto &suggestion : out.suggestions) {
+        if (suggestion.find("fcitx5-frontend-gtk4") != std::string::npos) named_the_package = true;
+    }
+    check(named_the_package, "the fix is one package, so the suggestion names it");
+}
+
+void test_host_gap_without_the_variable_on_wayland_is_harmless() {
+    HostInfo host = healthy_host();
+    host.gtk4.module = ModuleKind::None;
+    SessionInfo session = session_on("wayland", "kwin");
+    session.gtk_im_module.clear();
+    session.qt_im_module.clear();
+
+    Output out;
+    judge_host(host, session, out);
+    const Row *row = find_row(out, "Module GTK trên host");
+    check(row != nullptr && row->status != Status::Fail,
+          "with the variable unset a Wayland app reaches the compositor directly, so the missing "
+          "module costs nothing");
+    check(!out.has_failure(), "and the exit status stays clean");
+}
+
+void test_host_qt_gap_is_judged_against_qt_im_module() {
+    // The regression this guards: judging both families against GTK_IM_MODULE.
+    // Here GTK is unset and QT points at fcitx, so a Qt-only gap is fatal while a
+    // GTK one would not be — reading the wrong variable inverts both verdicts.
+    HostInfo host = healthy_host();
+    host.qt6.module = ModuleKind::None;
+    SessionInfo session = session_on("x11", "mutter");
+    session.gtk_im_module.clear();
+
+    Output out;
+    judge_host(host, session, out);
+    const Row *qt = find_row(out, "Module Qt trên host");
+    check(qt != nullptr && qt->status == Status::Fail, "QT_IM_MODULE=fcitx names a missing plugin");
+    check(qt->note.find("QT_IM_MODULE=fcitx") != std::string::npos,
+          "and the note names QT_IM_MODULE, not GTK_IM_MODULE");
+    const Row *gtk = find_row(out, "Module GTK trên host");
+    check(gtk != nullptr && gtk->status == Status::Ok,
+          "while the GTK row, whose modules are all installed, stays clean");
+}
+
+void test_host_reports_qt5_and_qt6_separately() {
+    // Two packages, installed independently. Collapsing them into one Qt cell
+    // named a plugin the user could not locate, and called a machine broken for
+    // lacking a Qt5 plugin when every Qt app on it is Qt6.
+    HostInfo host = healthy_host();
+    host.qt5.present = false;
+    host.qt5.module = ModuleKind::None;
+    host.qt6.module = ModuleKind::None;
+
+    Output out;
+    judge_host(host, session_on("x11", "mutter"), out);
+    const Row *row = find_row(out, "Module Qt trên host");
+    check(row != nullptr && row->value.find("Qt5 n/a") != std::string::npos,
+          "a Qt version the machine does not have is not a defect");
+    check(row->value.find("Qt6 thiếu") != std::string::npos, "the one it does have is");
+    for (const auto &suggestion : out.suggestions) {
+        check(suggestion.find("fcitx5-frontend-qt5") == std::string::npos,
+              "and no suggestion asks for the package of an absent toolkit");
+    }
+}
+
+void test_desktop_entry_parsing() {
+    const DesktopEntry gedit = parse_desktop_entry(
+        "[Desktop Entry]\n"
+        "Type=Application\n"
+        "Name=Text Editor\n"
+        "Name[vi]=Trình soạn thảo\n"
+        "Exec=gedit %U\n"
+        "\n"
+        "[Desktop Action new-window]\n"
+        "Name=New Window\n"
+        "Exec=gedit --new-window\n");
+    check(gedit.is_application && !gedit.hidden, "a plain application entry");
+    check(gedit.name == "Text Editor", "the unlocalised Name is the one used");
+    check(gedit.exec_binary == "gedit",
+          "the field code is dropped and the [Desktop Action] Exec below does not "
+          "replace the entry's own — taking the last Exec in the file starts the wrong binary");
+
+    const DesktopEntry wrapped =
+        parse_desktop_entry("[Desktop Entry]\nType=Application\nExec=env GDK_BACKEND=x11 inkscape "
+                            "%F\n");
+    check(wrapped.exec_binary == "inkscape",
+          "an env prefix names the environment, not the program, so it is skipped");
+
+    const DesktopEntry assigned =
+        parse_desktop_entry("[Desktop Entry]\nType=Application\nExec=LC_ALL=C xterm\n");
+    check(assigned.exec_binary == "xterm", "a bare VAR=value prefix is skipped too");
+
+    const DesktopEntry absolute =
+        parse_desktop_entry("[Desktop Entry]\nType=Application\nExec=/opt/foo/bin/foo=bar\n");
+    check(absolute.exec_binary == "/opt/foo/bin/foo=bar",
+          "an '=' after a slash is part of the path, not an assignment");
+
+    const DesktopEntry hidden =
+        parse_desktop_entry("[Desktop Entry]\nType=Application\nNoDisplay=true\nExec=foo\n");
+    check(hidden.hidden, "NoDisplay entries are MIME handlers, not applications");
+
+    const DesktopEntry link = parse_desktop_entry("[Desktop Entry]\nType=Link\nURL=https://x\n");
+    check(!link.is_application, "a Link entry starts no binary");
+}
+
+void test_ldd_output_parsing() {
+    std::vector<NativeApp> apps(3);
+    apps[0].binary = "/usr/bin/nautilus";
+    apps[1].binary = "/usr/bin/kate";
+    apps[2].binary = "/usr/lib/libreoffice/program/soffice";
+
+    // Shape of a real multi-argument run: a "<path>:" header per file, tab-indented
+    // dependency lines, and — for the wrapper script — a header with nothing under
+    // it, because ldd's explanation goes to stderr which every probe here drops.
+    const std::vector<std::string> measured = {apps[0].binary, apps[1].binary, apps[2].binary};
+    record_ldd_output(
+        "/usr/bin/nautilus:\n"
+        "\tlinux-vdso.so.1 (0x00007ffd)\n"
+        "\tlibgtk-4.so.1 => /lib/x86_64-linux-gnu/libgtk-4.so.1 (0x00007f00)\n"
+        "/usr/bin/kate:\n"
+        "\tlibQt6Widgets.so.6 => /lib/x86_64-linux-gnu/libQt6Widgets.so.6 (0x00007f01)\n"
+        "/usr/lib/libreoffice/program/soffice:\n",
+        measured, apps);
+
+    check(apps[0].gtk4 && !apps[0].gtk3 && !apps[0].toolkit_unknown, "GTK4 app recognised");
+    check(apps[1].qt6 && !apps[1].qt5 && !apps[1].toolkit_unknown,
+          "a Qt app is matched on Widgets too, not only Gui — an app links whichever it uses");
+    check(apps[2].toolkit_unknown,
+          "an empty section is a measurement that failed, not an application that "
+          "uses no toolkit — reading it the second way would quietly clear a wrapper script like "
+          "soffice of a problem nobody checked");
+}
+
+void test_ldd_single_app_has_no_header() {
+    // With exactly one argument ldd prints no "<path>:" line at all, so a parser
+    // that only trusts headers would attribute nothing and call the one app it was
+    // given unmeasured.
+    std::vector<NativeApp> apps(1);
+    apps[0].binary = "/usr/bin/nautilus";
+    record_ldd_output("\tlibgtk-4.so.1 => /lib/x86_64-linux-gnu/libgtk-4.so.1 (0x00007f00)\n",
+                      {apps[0].binary}, apps);
+    check(apps[0].gtk4 && !apps[0].toolkit_unknown, "the lone application still gets its answer");
+}
+
+void test_apps_using_reports_only_positives() {
+    HostInfo host = healthy_host();
+    host.apps_scanned = true;
+    NativeApp files;
+    files.name = "Files";
+    files.gtk4 = true;
+    NativeApp editor;
+    editor.name = "Text Editor";
+    editor.gtk3 = true;
+    NativeApp firefox;
+    firefox.name = "Firefox";
+    firefox.toolkit_unknown = true;
+    host.apps = {files, editor, firefox};
+
+    const AffectedApps gtk4 = apps_using(host, &NativeApp::gtk4);
+    check(gtk4.names.size() == 1 && gtk4.names.front() == "Files",
+          "only applications that really link the toolkit are named");
+    check(gtk4.unknown == 1 && gtk4.scanned == 3,
+          "an application whose toolkit could not be read is counted, never listed as unaffected — "
+          "Firefox loads GTK through libxul, so its launcher links none itself");
+}
+
+void test_host_gap_names_the_affected_apps() {
+    HostInfo host = healthy_host();
+    host.gtk4.module = ModuleKind::None;
+    host.apps_scanned = true;
+    NativeApp files;
+    files.name = "Files";
+    files.gtk4 = true;
+    NativeApp editor;
+    editor.name = "Text Editor";
+    editor.gtk3 = true;
+    host.apps = {files, editor};
+
+    Output out;
+    judge_host(host, session_on("x11", "mutter"), out);
+    const Row *row = find_row(out, "app dùng GTK4");
+    check(row != nullptr, "the gap row is followed by the applications it costs");
+    check(row->value.find("Files") != std::string::npos &&
+              row->value.find("Text Editor") == std::string::npos,
+          "and only the ones using that toolkit are named");
+    check(row->depth == 1, "listed under the toolkit row it belongs to");
+    check(row->status == Status::Fail,
+          "it itemises the same finding, so it carries the same status rather than a milder one");
+    check(row->note.find("Dò 2 ứng dụng") != std::string::npos,
+          "the scan states its own coverage, so a partial list cannot read as a complete one");
+    check(find_row(out, "app dùng GTK3") == nullptr,
+          "no list is printed for a toolkit whose module is installed");
+}
+
+void test_gap_with_no_affected_app_says_so() {
+    // GTK4 installed as a dependency, no GTK4 application on the machine, and the
+    // whole scan conclusive. The gap is real but currently costs nothing, and the
+    // report has to be able to say that.
+    HostInfo host = healthy_host();
+    host.gtk4.module = ModuleKind::None;
+    host.apps_scanned = true;
+    NativeApp editor;
+    editor.name = "Text Editor";
+    editor.gtk3 = true;
+    host.apps = {editor};
+
+    Output out;
+    judge_host(host, session_on("x11", "mutter"), out);
+    const Row *row = find_row(out, "app dùng GTK4");
+    check(row != nullptr && row->status == Status::Info, "an empty list is information, not a fault");
+    check(row->note.find("chưa ảnh hưởng") != std::string::npos,
+          "and it says the gap has no victim yet");
+
+    // The row above used to be pushed with Fail before the scan was consulted, so
+    // the report said "broken" while the row under it said "affects nothing" — and
+    // the exit status backed the wrong one, calling a healthy machine broken.
+    const Row *modules = find_row(out, "Module GTK trên host");
+    check(modules != nullptr && modules->status == Status::Warn,
+          "a gap nothing uses is a risk, not an incident, even with "
+          "GTK_IM_MODULE=fcitx set");
+    check(!out.has_failure(), "so the exit status stays clean");
+    check(modules->note.find("rủi ro chưa xảy ra") != std::string::npos,
+          "and the note says so instead of claiming apps cannot type");
+}
+
+void test_unused_gap_does_not_raise_the_wayland_case() {
+    // Wayland with the variables unset: the missing module costs nothing at all,
+    // and the app scan must not turn that into a warning. Ordering the "nothing
+    // uses it" branch ahead of the Wayland one did exactly that — it downgraded a
+    // Fail correctly and *upgraded* an Info by the same code path.
+    HostInfo host = healthy_host();
+    host.gtk4.module = ModuleKind::None;
+    host.apps_scanned = true;
+    NativeApp editor;
+    editor.name = "Text Editor";
+    editor.gtk3 = true;
+    host.apps = {editor};
+    SessionInfo session = session_on("wayland", "kwin");
+    session.gtk_im_module.clear();
+    session.qt_im_module.clear();
+
+    Output out;
+    judge_host(host, session, out);
+    const Row *modules = find_row(out, "Module GTK trên host");
+    check(modules != nullptr && modules->status == Status::Info,
+          "on Wayland with the variable unset this stays information, not a warning");
+}
+
+void test_unreadable_app_keeps_the_gap_a_failure() {
+    // Same gap, but one application's toolkit could not be read. "Nothing uses
+    // GTK4" is then a guess, and a guess must not clear a failure.
+    HostInfo host = healthy_host();
+    host.gtk4.module = ModuleKind::None;
+    host.apps_scanned = true;
+    NativeApp editor;
+    editor.name = "Text Editor";
+    editor.gtk3 = true;
+    NativeApp firefox;
+    firefox.name = "Firefox";
+    firefox.toolkit_unknown = true;
+    host.apps = {editor, firefox};
+
+    Output out;
+    judge_host(host, session_on("x11", "mutter"), out);
+    const Row *modules = find_row(out, "Module GTK trên host");
+    check(modules != nullptr && modules->status == Status::Fail,
+          "an incomplete scan cannot absolve the gap: Firefox may well be the GTK4 app");
+}
+
+void test_one_unaffected_toolkit_does_not_clear_its_family() {
+    // GTK3 gap with an application using it, GTK4 gap with none. Downgrading on
+    // "some gap hits nothing" would clear a failure that is real.
+    HostInfo host = healthy_host();
+    host.gtk3.module = ModuleKind::None;
+    host.gtk4.module = ModuleKind::None;
+    host.apps_scanned = true;
+    NativeApp editor;
+    editor.name = "Text Editor";
+    editor.gtk3 = true;
+    host.apps = {editor};
+
+    Output out;
+    judge_host(host, session_on("x11", "mutter"), out);
+    const Row *modules = find_row(out, "Module GTK trên host");
+    check(modules != nullptr && modules->status == Status::Fail,
+          "the family still fails, because one of its gaps has a victim");
+}
+
+void test_legacy_module_escalates_an_info_row() {
+    // Wayland gap sets the row to Info; the fcitx4-era GTK3 module must still
+    // raise it. Guarding the escalation on Ok alone left an actionable finding —
+    // and a suggestion — wearing the `·` glyph the legend calls "not an analysis
+    // result", while judge_fcitx5 could simultaneously Fail for the same addon.
+    HostInfo host = healthy_host();
+    host.gtk3.module = ModuleKind::Fcitx4;
+    host.gtk3_cache.module_file = "im-fcitx.so";
+    host.gtk4.module = ModuleKind::None;
+    SessionInfo session = session_on("wayland", "kwin");
+    session.gtk_im_module.clear();
+    session.qt_im_module.clear();
+
+    Output out;
+    judge_host(host, session, out);
+    const Row *row = find_row(out, "Module GTK trên host");
+    check(row != nullptr && row->status == Status::Warn,
+          "a row carrying a fix to apply is at least a warning");
+    check(!out.suggestions.empty(), "and it does carry one");
+}
+
+void test_stale_cache_entry_names_the_old_module() {
+    HostInfo host = healthy_host();
+    host.gtk3_cache.state = Gtk3CacheState::NotRegistered;
+    host.gtk3_cache.other_fcitx = "im-fcitx.so";
+
+    Output out;
+    judge_host(host, session_on("x11", "mutter"), out);
+    const Row *row = find_row(out, "Cache immodule GTK3");
+    check(row != nullptr && row->value.find("im-fcitx.so") != std::string::npos,
+          "the row names the file the cache still points at, not just 'no fcitx'");
+    check(row->note.find("im-fcitx5.so") != std::string::npos,
+          "and contrasts it with the module actually installed");
+}
+
+void test_app_list_is_capped_but_never_silently() {
+    HostInfo host = healthy_host();
+    host.gtk4.module = ModuleKind::None;
+    host.apps_scanned = true;
+    for (int i = 0; i < 12; ++i) {
+        NativeApp app;
+        app.name = "app" + std::to_string(i);
+        app.gtk4 = true;
+        host.apps.push_back(app);
+    }
+
+    Output out;
+    judge_host(host, session_on("x11", "mutter"), out);
+    const Row *row = find_row(out, "app dùng GTK4");
+    check(row != nullptr && row->value.find("và 4 app nữa") != std::string::npos,
+          "a list cut short says how many it dropped — a silent cap reads as the whole answer");
+}
+
+void test_apps_are_not_listed_when_the_scan_did_not_run() {
+    HostInfo host = healthy_host();
+    host.gtk4.module = ModuleKind::None;  // a gap, but apps_scanned stays false
+
+    Output out;
+    judge_host(host, session_on("x11", "mutter"), out);
+    check(find_row(out, "app dùng GTK4") == nullptr,
+          "an empty app list means the scan never ran, so nothing is claimed about applications");
+    check(find_row(out, "Module GTK trên host") != nullptr, "the module verdict still stands");
+}
+
+void test_host_toolkit_gap_predicate() {
+    check(!host_has_toolkit_gap(healthy_host()), "a fully equipped host has no gap");
+
+    HostInfo missing = healthy_host();
+    missing.qt6.module = ModuleKind::None;
+    check(host_has_toolkit_gap(missing), "a toolkit without its module is a gap");
+
+    HostInfo absent = healthy_host();
+    absent.qt6 = {};  // not installed at all
+    check(!host_has_toolkit_gap(absent),
+          "a toolkit the machine does not have is not a gap, so it must not trigger "
+          "the application scan either");
+}
+
+void test_immodules_cache_parsing() {
+    const std::string header_only =
+        "# GTK+ Input Method Modules file\n"
+        "# Created by /usr/lib/x86_64-linux-gnu/libgtk-3-0t64/gtk-query-immodules-3.0\n"
+        "# ModulesPath = /usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules\n";
+    const CacheRegistration empty = immodules_cache_registration(header_only, "im-fcitx5.so");
+    check(!empty.lists_module && empty.other_fcitx.empty(),
+          "a cache that registers nothing is not a cache that registers our module");
+
+    const std::string with_entry = header_only +
+        "\"/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-fcitx5.so\"\n"
+        "\"fcitx5\" \"Fcitx5\" \"fcitx5\" \"/usr/share/locale\" \"\"\n";
+    const CacheRegistration found = immodules_cache_registration(with_entry, "im-fcitx5.so");
+    check(found.lists_module, "the installed module is found");
+
+    // The bug this replaced a substring test to fix: the fcitx4 package's entry
+    // survives in the cache while im-fcitx5.so is what is installed. Matching on
+    // the word "fcitx" called that healthy, which is exactly the stale cache the
+    // row exists to catch.
+    const std::string stale = header_only +
+        "\"/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-fcitx.so\"\n"
+        "\"fcitx\" \"Fcitx\" \"fcitx\" \"/usr/share/locale\" \"\"\n";
+    const CacheRegistration outdated = immodules_cache_registration(stale, "im-fcitx5.so");
+    check(!outdated.lists_module,
+          "an entry for the previous package does not register the module that is "
+          "installed now — GTK3 loads only what the cache names");
+    check(outdated.other_fcitx == "im-fcitx.so",
+          "and the file it still points at is named, which is what makes the row actionable");
+}
+
+void test_stale_immodules_cache_is_reported() {
+    // The module file is on disk and the cache exists, so every other check on
+    // this machine passes — and GTK3 still loads nothing, because the cache is
+    // the only list it reads.
+    HostInfo host = healthy_host();
+    host.gtk3_cache.state = Gtk3CacheState::NotRegistered;
+
+    Output out;
+    judge_host(host, session_on("x11", "mutter"), out);
+    const Row *row = find_row(out, "Cache immodule GTK3");
+    check(row != nullptr && row->status == Status::Fail,
+          "GTK_IM_MODULE=fcitx with the module unregistered means GTK3 apps get the default IM");
+    const Row *modules = find_row(out, "Module GTK trên host");
+    check(modules != nullptr && modules->status == Status::Ok,
+          "and the module row stays clean: the file really is installed");
+}
+
+void test_qt_plugin_directory_decides_its_own_version() {
+    // The scan enumerates <libdir>/qt6 as a library base in its own right, so the
+    // bare "plugins" layout entry read its Qt6 plugin as the Qt5 answer — on
+    // Fedora/openSUSE/Arch that reported `Qt5 fcitx5` for a machine with no Qt5
+    // plugin at all, and suppressed both the package suggestion and the app scan.
+    check(qt6_from_directory_name("qt6") == true, "a qt6 directory serves Qt6");
+    check(qt6_from_directory_name("qt5") == false, "a qt5 directory serves Qt5");
+    check(qt6_from_directory_name("qt") == false, "Arch's bare qt directory is Qt5");
+    check(!qt6_from_directory_name("x86_64-linux-gnu").has_value(),
+          "a triplet directory says nothing, so the layout table decides");
+    check(!qt6_from_directory_name("python3.12").has_value(), "nor does anything else");
+}
+
+void test_worse_gtk3_cache_wins() {
+    Gtk3Cache none;
+    Gtk3Cache good;
+    good.state = Gtk3CacheState::Registered;
+    good.module_file = "im-fcitx5.so";
+    Gtk3Cache stale;
+    stale.state = Gtk3CacheState::NotRegistered;
+    stale.module_file = "im-fcitx5.so";
+    stale.other_fcitx = "im-fcitx.so";
+    Gtk3Cache no_cache;
+    no_cache.state = Gtk3CacheState::NoCache;
+    no_cache.module_file = "im-fcitx5.so";
+
+    check(worse_gtk3_cache(none, good).state == Gtk3CacheState::Registered,
+          "a real pairing beats having found no module");
+    check(worse_gtk3_cache(good, stale).state == Gtk3CacheState::NotRegistered,
+          "a healthy root must not mask a stale one: OR-ing 'healthy' across library roots let a "
+          "good i386 cache declare a stale x86_64 cache fine");
+    check(worse_gtk3_cache(stale, good).state == Gtk3CacheState::NotRegistered,
+          "and the order of the roots does not change the verdict");
+    check(worse_gtk3_cache(no_cache, stale).state == Gtk3CacheState::NotRegistered,
+          "a cache registering the wrong module outranks no cache: it looks configured and is not");
+    check(worse_gtk3_cache(good, stale).other_fcitx == "im-fcitx.so",
+          "the record travels whole, so the installed module and the stale entry describe one root");
+}
+
+void test_empty_app_scan_is_not_evidence() {
+    // `probe_native_apps` used to set apps_scanned before it knew it could measure
+    // anything, so a scan that inspected nothing — no ldd, no readable
+    // /usr/share/applications, a container — looked exactly like a scan that
+    // proved no application uses the missing toolkit, and cleared the failure.
+    HostInfo host = healthy_host();
+    host.gtk4.module = ModuleKind::None;
+    host.apps_scanned = true;  // but host.apps stays empty
+
+    Output out;
+    judge_host(host, session_on("x11", "mutter"), out);
+    const Row *row = find_row(out, "Module GTK trên host");
+    check(row != nullptr && row->status == Status::Fail,
+          "an empty application list is not proof that nothing uses GTK4");
+    check(out.has_failure(), "so the exit status still reports the gap");
+
+    const Row *apps = find_row(out, "app dùng GTK4");
+    check(apps != nullptr && apps->value == "không dò được app nào",
+          "and the sub-row says the scan came back empty rather than claiming no app uses it");
+}
+
+void test_interpreter_is_not_the_application() {
+    // `Exec=/usr/bin/env GDK_BACKEND=x11 gedit` used to record /usr/bin/env as the
+    // application: ldd answers for the interpreter, which links no toolkit, so a
+    // real GTK app counted as conclusively unaffected.
+    const DesktopEntry absolute_env = parse_desktop_entry(
+        "[Desktop Entry]\nType=Application\nExec=/usr/bin/env GDK_BACKEND=x11 gedit %U\n");
+    check(absolute_env.exec_binary == "gedit",
+          "an absolute /usr/bin/env prefix is stripped like the bare word is");
+
+    check(is_interpreter("/usr/bin/python3") && is_interpreter("/bin/sh") &&
+              is_interpreter("python3.12") && is_interpreter("/usr/bin/gjs"),
+          "the remaining launchers are recognised so their apps are left unmeasured");
+    check(!is_interpreter("/usr/bin/gedit") && !is_interpreter("/usr/bin/nautilus"),
+          "and a real application is not mistaken for one");
+}
+
+void test_only_system_binaries_are_handed_to_ldd() {
+    // ldd resolves dependencies by running the target's ELF interpreter, and the
+    // names come from user-writable desktop entries resolved through the caller's
+    // PATH. Anything outside the system prefixes is reported as unmeasured
+    // instead of executed.
+    check(under_system_prefix("/usr/bin/gedit") && under_system_prefix("/opt/foo/bin/foo") &&
+              under_system_prefix("/bin/sh"),
+          "system prefixes are measurable");
+    check(!under_system_prefix("/home/sonnn/.local/bin/app") &&
+              !under_system_prefix("/tmp/evil") && !under_system_prefix("/srv/app/run"),
+          "anything user-writable is not");
+}
+
+void test_host_without_lib_roots_is_not_a_broken_host() {
+    Output out;
+    judge_host(HostInfo{}, session_on("x11", "mutter"), out);
+    const Row *row = find_row(out, "Module trên host");
+    check(row != nullptr && row->status == Status::Warn,
+          "nowhere to scan is a failed measurement, not four missing modules");
+    check(!out.has_failure(), "so it never reaches the exit status");
 }
 
 void test_session_env_empty_depends_on_display_server() {
@@ -845,6 +1405,83 @@ void test_snap_fcitx4_module_needs_fcitx4_frontend() {
           "the snap ships only a fcitx4 module, so without that frontend it is broken now");
 }
 
+void test_host_fcitx4_module_needs_fcitx4_frontend() {
+    // No sandbox anywhere: the only GTK3 module on the machine is the fcitx4-era
+    // one from fcitx-frontend-gtk3. Checking snaps alone left a natively
+    // installed desktop in exactly this state with nothing reported at all.
+    Report report;
+    report.session = session_on("x11", "mutter");
+    report.host = healthy_host();
+    report.host.gtk3.module = ModuleKind::Fcitx4;
+
+    Fcitx5Info fcitx5;
+    fcitx5.running = true;
+    fcitx5.bus_native = true;
+    fcitx5.bus_portal = true;
+    fcitx5.addon_path = "/usr/lib/fcitx5/telebit-fcitx5.so";
+    fcitx5.bus_fcitx4 = false;
+
+    Output out;
+    judge_fcitx5(fcitx5, report.session, report, out);
+    const Row *row = find_row(out, "Frontend fcitx4");
+    check(row != nullptr && row->status == Status::Fail,
+          "the host's GTK3 module speaks the legacy protocol, so without that frontend native "
+          "GTK3 apps are broken now");
+    check(row->note.find("host") != std::string::npos,
+          "and the note says it is the host, not a snap");
+}
+
+void test_fcitx4_frontend_is_gated_on_the_session() {
+    // Wayland with the IM variables unset: GTK reaches the compositor directly and
+    // never opens the fcitx4-era module, so the compatibility frontend is not
+    // load-bearing. An ungated Fail here made doctor exit 1 on a working machine,
+    // and contradicted judge_host, which calls the same state harmless.
+    Report report;
+    report.session = session_on("wayland", "kwin");
+    report.session.gtk_im_module.clear();
+    report.session.qt_im_module.clear();
+    report.host = healthy_host();
+    report.host.gtk3.module = ModuleKind::Fcitx4;
+
+    Fcitx5Info fcitx5;
+    fcitx5.running = true;
+    fcitx5.bus_native = true;
+    fcitx5.bus_portal = true;
+    fcitx5.addon_path = "/usr/lib/fcitx5/telebit-fcitx5.so";
+    fcitx5.bus_fcitx4 = false;
+
+    Output out;
+    judge_fcitx5(fcitx5, report.session, report, out);
+    check(find_row(out, "Frontend fcitx4") == nullptr,
+          "no variable routes to the legacy module, so its frontend is not required");
+    check(!out.has_failure(), "and doctor does not exit 1 on this machine");
+}
+
+void test_fcitx4_frontend_names_the_affected_toolkit() {
+    // The note used to say "ứng dụng GTK3" whatever the legacy module was, so a
+    // user whose fcitx4-era module was the Qt5 plugin was sent to look at GTK.
+    Report report;
+    report.session = session_on("x11", "mutter");
+    report.host = healthy_host();
+    report.host.qt5.module = ModuleKind::Fcitx4;
+
+    Fcitx5Info fcitx5;
+    fcitx5.running = true;
+    fcitx5.bus_native = true;
+    fcitx5.bus_portal = true;
+    fcitx5.addon_path = "/usr/lib/fcitx5/telebit-fcitx5.so";
+    fcitx5.bus_fcitx4 = false;
+
+    Output out;
+    judge_fcitx5(fcitx5, report.session, report, out);
+    const Row *row = find_row(out, "Frontend fcitx4");
+    check(row != nullptr && row->status == Status::Fail,
+          "QT_IM_MODULE=fcitx does route to the legacy Qt5 plugin, so this one is real");
+    check(row->note.find("Qt5") != std::string::npos &&
+              row->note.find("GTK3") == std::string::npos,
+          "and the note names Qt5, the toolkit that is actually affected");
+}
+
 void test_fcitx5_not_running_stops_early() {
     Report report;
     Fcitx5Info fcitx5;  // running == false
@@ -1168,6 +1805,33 @@ int main() {
     test_runtime_without_qt_is_clean();
     test_missing_module_on_x11_is_a_risk_not_a_failure();
     test_missing_module_on_wayland_is_harmless();
+    test_healthy_host_is_clean();
+    test_host_gap_with_the_variable_set_fails_even_on_wayland();
+    test_host_gap_without_the_variable_on_wayland_is_harmless();
+    test_host_qt_gap_is_judged_against_qt_im_module();
+    test_host_reports_qt5_and_qt6_separately();
+    test_desktop_entry_parsing();
+    test_ldd_output_parsing();
+    test_ldd_single_app_has_no_header();
+    test_apps_using_reports_only_positives();
+    test_host_gap_names_the_affected_apps();
+    test_gap_with_no_affected_app_says_so();
+    test_unused_gap_does_not_raise_the_wayland_case();
+    test_unreadable_app_keeps_the_gap_a_failure();
+    test_one_unaffected_toolkit_does_not_clear_its_family();
+    test_legacy_module_escalates_an_info_row();
+    test_stale_cache_entry_names_the_old_module();
+    test_app_list_is_capped_but_never_silently();
+    test_apps_are_not_listed_when_the_scan_did_not_run();
+    test_host_toolkit_gap_predicate();
+    test_immodules_cache_parsing();
+    test_stale_immodules_cache_is_reported();
+    test_qt_plugin_directory_decides_its_own_version();
+    test_worse_gtk3_cache_wins();
+    test_empty_app_scan_is_not_evidence();
+    test_interpreter_is_not_the_application();
+    test_only_system_binaries_are_handed_to_ldd();
+    test_host_without_lib_roots_is_not_a_broken_host();
     test_session_env_empty_depends_on_display_server();
     test_session_env_pointing_elsewhere_fails();
     test_qt_and_xmodifiers_are_judged_too();
@@ -1185,6 +1849,9 @@ int main() {
     test_kwin_wayland_advice();
     test_mutter_wayland_needs_ibus_frontend();
     test_snap_fcitx4_module_needs_fcitx4_frontend();
+    test_host_fcitx4_module_needs_fcitx4_frontend();
+    test_fcitx4_frontend_is_gated_on_the_session();
+    test_fcitx4_frontend_names_the_affected_toolkit();
     test_fcitx5_not_running_stops_early();
     test_misrouted_does_not_hide_a_missing_variable();
     test_app_without_a_runtime_is_not_drawn_as_one();
