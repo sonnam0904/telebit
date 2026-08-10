@@ -1,3 +1,11 @@
+# [2.10.0](https://github.com/sonnam0904/telebit/compare/v2.9.0...v2.10.0) (2026-08-10)
+
+
+### Features
+
+* **doctor:** check input-method modules for natively installed apps ([3e60dbe](https://github.com/sonnam0904/telebit/commit/3e60dbe18e651977204681d834b8b557a3f1ec04))
+* update APT repository to support additional Debian and Fedora versions ([22ce0c4](https://github.com/sonnam0904/telebit/commit/22ce0c4c48066080e31ab6c6b9aa5be593c05503))
+
 # [2.9.0](https://github.com/sonnam0904/telebit/compare/v2.8.1...v2.9.0) (2026-08-08)
 
 
