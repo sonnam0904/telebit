@@ -10,14 +10,15 @@
 #   <repo_dir>/dists/<suite>/{Release,Release.gpg,InRelease}
 #   <repo_dir>/pubkey.gpg
 #
-# One "suite" per Ubuntu codename (jammy, noble, resolute, ...) keeps ABI-incompatible
-# builds of telebit-fcitx5 from colliding: users pick the codename in their
-# sources.list entry, so only the matching binaries are ever visible to apt.
+# One "suite" per distro codename (jammy, noble, resolute, bookworm, trixie, ...) keeps
+# ABI-incompatible builds of telebit-fcitx5 from colliding: users pick the
+# codename in their sources.list entry, so only the matching binaries are ever
+# visible to apt.
 set -euo pipefail
 
 REPO_DIR="${1:?repo_dir required}"
 GPG_KEY_ID="${2:?gpg_key_id required}"
-SUITE="${3:?suite required (e.g. jammy, noble)}"
+SUITE="${3:?suite required (e.g. jammy, noble, trixie)}"
 shift 3
 DEB_FILES=("$@")
 if [[ ${#DEB_FILES[@]} -eq 0 ]]; then
@@ -67,8 +68,8 @@ if [[ ! -f "${REPO_DIR}/index.html" ]]; then
 <title>Telebit APT repository</title>
 <p>APT repository for <a href="https://github.com/sonnam0904/telebit">Telebit</a>.
 See the <a href="https://sonnam0904.github.io/telebit/getting-started/installation/">installation guide</a>
-for setup instructions. Suites: <code>jammy</code> (22.04), <code>noble</code> (24.04),
-<code>resolute</code> (26.04).</p>
+for setup instructions. Suites: <code>jammy</code> (Ubuntu 22.04), <code>noble</code> (24.04),
+<code>resolute</code> (26.04), <code>bookworm</code> (Debian 12), <code>trixie</code> (Debian 13).</p>
 HTML
 fi
 

@@ -191,8 +191,8 @@ của doctor hỏng.
 
 | Script                        | Ra                                                            |
 | ----------------------------- | ------------------------------------------------------------- |
-| `scripts/build-deb.sh`        | `.deb` (dùng `TELEBIT_DEB_PACKAGE_SUFFIX` để đặt jammy/noble) |
-| `scripts/build-rpm.sh`        | `.rpm`                                                        |
+| `scripts/build-deb.sh`        | `.deb` (dùng `TELEBIT_DEB_PACKAGE_SUFFIX` để đặt jammy/noble/resolute/bookworm/trixie) |
+| `scripts/build-rpm.sh`        | `.rpm` (dùng `TELEBIT_RPM_PACKAGE_SUFFIX` để đặt fedora43/fedora44) |
 | `scripts/build-meta-deb.sh`   | metapackage `telebit`                                         |
 | `scripts/apt-repo-publish.sh` | thêm `.deb` vào APT repo tĩnh rồi ký lại index                |
 

@@ -52,13 +52,15 @@ Làm theo thứ tự:
    fcitx5-configtool bằng package manager của distro trước.
 
 3. Chọn đúng một cách cài:
-   - Ubuntu 22.04 (jammy) / 24.04 (noble) / 26.04 (resolute)
+   - Ubuntu 22.04 (jammy) / 24.04 (noble) / 26.04 (resolute),
+     Debian 12 (bookworm) / 13 (trixie)
      → APT repo của dự án, có thêm khoá GPG (mục "Cách 1" trong README).
-   - Debian, hoặc Ubuntu có codename khác ba cái trên
+   - Ubuntu/Debian có codename khác năm cái trên
      → tải .deb mới nhất từ GitHub Releases, chọn hậu tố gần nhất,
        cài bằng `sudo apt install -y ./<file>.deb`.
    - Fedora / CentOS
-     → tải .rpm từ Releases, `sudo dnf install -y ./<file>.rpm`.
+     → tải .rpm từ Releases, chọn bản khớp `rpm -E %fedora` (`~fedora43`
+       hoặc `~fedora44`), rồi `sudo dnf install -y ./<file>.rpm`.
    - Distro khác (Arch, openSUSE, ...)
      → clone repo, cài dependency, build từ source theo mục "Cách 5".
 

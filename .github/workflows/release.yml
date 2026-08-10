@@ -26,13 +26,15 @@ jobs:
   test:
     uses: ./.github/workflows/ci.yml
 
-  # One .deb per Ubuntu suite so each links against that release's own
-  # libstdc++/libc: jammy = 22.04, noble = 24.04, resolute = 26.04.
+  # One .deb per suite so each links against that release's own libstdc++/libc:
+  # jammy = Ubuntu 22.04, noble = 24.04, resolute = 26.04,
+  # bookworm = Debian 12, trixie = Debian 13.
   #
-  # jammy/noble build natively on their matching runner. resolute builds inside
-  # a container on a stable runner instead: the hosted `ubuntu-26.04` image is
-  # still preview-only, so depending on it would make releases hostage to a
-  # runner that can change or be unavailable. `image: ""` means "build native".
+  # jammy/noble build natively on their matching runner. Everything else builds
+  # inside a container on a stable runner instead: there is no hosted Debian
+  # runner, and the hosted `ubuntu-26.04` image is still preview-only, so
+  # depending on either would make releases hostage to a runner that can change
+  # or be unavailable. `image: ""` means "build native".
   package-deb:
     needs: test
     strategy:
@@ -42,6 +44,8 @@ jobs:
           - { runner: ubuntu-22.04, suffix: jammy,    image: "" }
           - { runner: ubuntu-24.04, suffix: noble,    image: "" }
           - { runner: ubuntu-24.04, suffix: resolute, image: "ubuntu:26.04" }
+          - { runner: ubuntu-24.04, suffix: bookworm, image: "debian:12" }
+          - { runner: ubuntu-24.04, suffix: trixie,   image: "debian:13" }
 
     runs-on: ${{ matrix.runner }}
     steps:
@@ -87,21 +91,28 @@ jobs:
           name: telebit-fcitx5-deb-${{ matrix.suffix }}
           path: telebit-fcitx5/build-deb/*.deb
 
+  # One .rpm per Fedora release, each built in its matching container so it
+  # links against that release's own libstdc++/fcitx5.
   package-rpm:
     needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { suffix: fedora43, image: "fedora:43" }
+          - { suffix: fedora44, image: "fedora:44" }
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Build RPM via Docker (Fedora)
-        env:
-          TELEBIT_RPM_PACKAGE_SUFFIX: fedora43
+      - name: Build RPM via Docker (${{ matrix.image }})
         run: |
           docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace \
-            -e TELEBIT_RPM_PACKAGE_SUFFIX=${TELEBIT_RPM_PACKAGE_SUFFIX} \
-            fedora:43 bash -c '
+            -e TELEBIT_RPM_PACKAGE_SUFFIX=${{ matrix.suffix }} \
+            ${{ matrix.image }} bash -c '
             dnf install -y cmake gcc-c++ make fcitx5-devel extra-cmake-modules git rpm-build libcurl-devel
             git config --global --add safe.directory /workspace
             bash scripts/build-rpm.sh
@@ -110,7 +121,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: telebit-fcitx5-rpm-fedora43
+          name: telebit-fcitx5-rpm-${{ matrix.suffix }}
           path: telebit-fcitx5/build-rpm/*.rpm
 
   release:
@@ -186,11 +197,11 @@ jobs:
           ref: gh-pages
           path: apt-repo
 
-      - name: Publish jammy + noble + resolute suites
+      - name: Publish all APT suites
         if: steps.check.outputs.released == 'true'
         run: |
           set -euo pipefail
-          for suite in jammy noble resolute; do
+          for suite in jammy noble resolute bookworm trixie; do
             shopt -s nullglob
             debs=(release-debs/*"+${suite}"*.deb)
             shopt -u nullglob

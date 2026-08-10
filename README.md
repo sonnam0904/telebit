@@ -88,7 +88,8 @@ Thêm repo một lần, sau đó nhận bản mới qua `apt upgrade` như mọi
 curl -fsSL https://sonnam0904.github.io/telebit/pubkey.gpg \
   | sudo gpg --dearmor -o /usr/share/keyrings/telebit-archive-keyring.gpg
 
-# 2. Thêm repo (tự lấy codename: jammy 22.04 / noble 24.04 / resolute 26.04)
+# 2. Thêm repo (tự lấy codename: jammy 22.04 / noble 24.04 / resolute 26.04
+#    / bookworm Debian 12 / trixie Debian 13)
 echo "deb [signed-by=/usr/share/keyrings/telebit-archive-keyring.gpg] https://sonnam0904.github.io/telebit $(lsb_release -cs) main" \
   | sudo tee /etc/apt/sources.list.d/telebit.list
 
@@ -98,7 +99,7 @@ sudo apt install telebit
 ```
 
 > [!IMPORTANT]
-> Repo hiện có 3 suite: **`jammy`** (Ubuntu 22.04), **`noble`** (24.04) và **`resolute`** (26.04). Chạy `lsb_release -cs` để kiểm tra máy bạn — nếu ra codename khác (ví dụ `bookworm` của Debian), `apt update` sẽ báo không tìm thấy, khi đó hãy dùng [Cách 3](#install-deb) và chọn file `.deb` gần nhất.
+> Repo hiện có 5 suite: **`jammy`** (Ubuntu 22.04), **`noble`** (24.04), **`resolute`** (26.04), **`bookworm`** (Debian 12) và **`trixie`** (Debian 13). Chạy `lsb_release -cs` để kiểm tra máy bạn — nếu ra codename khác (ví dụ một bản Ubuntu non-LTS, hoặc Linux Mint), `apt update` sẽ báo không tìm thấy, khi đó hãy dùng [Cách 3](#install-deb) và chọn file `.deb` gần nhất.
 
 `telebit` là metapackage tiện dùng, chỉ phụ thuộc vào gói thật `telebit-fcitx5` — `apt install telebit-fcitx5` cũng cho kết quả y hệt.
 
@@ -138,10 +139,10 @@ File `.deb` **không nằm trong repo**, mỗi bản được build tự động
 
 | Nguồn | Cách lấy |
 |---|---|
-| **Releases** *(nên dùng)* | [Trang Releases](https://github.com/sonnam0904/telebit/releases) → mỗi tag có **ba** `.deb`, hậu tố `+jammy` (22.04), `+noble` (24.04) hoặc `+resolute` (26.04) |
-| **Artifacts** | **Actions** → **Release** → run mới nhất → **Artifacts** → `telebit-fcitx5-deb-jammy` / `-noble` / `-resolute` (giải nén ra `.deb`) |
+| **Releases** *(nên dùng)* | [Trang Releases](https://github.com/sonnam0904/telebit/releases) → mỗi tag có **năm** `.deb`, hậu tố `+jammy` (Ubuntu 22.04), `+noble` (24.04), `+resolute` (26.04), `+bookworm` (Debian 12) hoặc `+trixie` (Debian 13) |
+| **Artifacts** | **Actions** → **Release** → run mới nhất → **Artifacts** → `telebit-fcitx5-deb-jammy` / `-noble` / `-resolute` / `-bookworm` / `-trixie` (giải nén ra `.deb`) |
 
-Tên file dạng `telebit-fcitx5_<phiên-bản>+jammy_amd64.deb`. Chạy `lsb_release -cs` để biết nên lấy hậu tố nào — mỗi bản build trên chính Ubuntu đó nên khớp `libstdc++`/`libc` tương ứng.
+Tên file dạng `telebit-fcitx5_<phiên-bản>+jammy_amd64.deb`. Chạy `lsb_release -cs` để biết nên lấy hậu tố nào — mỗi bản build trên chính bản phân phối đó nên khớp `libstdc++`/`libc` tương ứng.
 
 **2. Cài**
 
@@ -174,7 +175,7 @@ sudo apt-get install -f -y
 
 Gói `.rpm` cũng được build tự động mỗi bản release, và yêu cầu hệ thống có sẵn `fcitx5` (nằm trong repo mặc định của Fedora).
 
-**1. Tải file** — từ [Releases](https://github.com/sonnam0904/telebit/releases) hoặc **Actions → Artifacts**. Tên file dạng `telebit-fcitx5-*-fedora43.rpm`.
+**1. Tải file** — từ [Releases](https://github.com/sonnam0904/telebit/releases) hoặc **Actions → Artifacts**. Mỗi tag có **hai** `.rpm`: `~fedora43` cho Fedora 43 và `~fedora44` cho Fedora 44 (chạy `rpm -E %fedora` để biết máy bạn cần bản nào).
 
 **2. Cài**
 

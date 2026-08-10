@@ -39,8 +39,20 @@
             "label": "Debian/Ubuntu amd64 (.deb) - Ubuntu 26.04 resolute"
           },
           {
-            "path": "release-rpms/*.rpm",
-            "label": "RPM x86_64 (.rpm) - Fedora"
+            "path": "release-debs/*+bookworm*.deb",
+            "label": "Debian/Ubuntu amd64 (.deb) - Debian 12 bookworm"
+          },
+          {
+            "path": "release-debs/*+trixie*.deb",
+            "label": "Debian/Ubuntu amd64 (.deb) - Debian 13 trixie"
+          },
+          {
+            "path": "release-rpms/*~fedora43*.rpm",
+            "label": "RPM x86_64 (.rpm) - Fedora 43"
+          },
+          {
+            "path": "release-rpms/*~fedora44*.rpm",
+            "label": "RPM x86_64 (.rpm) - Fedora 44"
           }
         ]
       }

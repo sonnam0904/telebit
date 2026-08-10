@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Build the release .debs for GitHub Releases, one per supported Ubuntu suite:
-#   jammy    (22.04 libc/libstdc++) — built natively on the ubuntu-22.04 runner
-#   noble    (24.04)                — built in Docker
-#   resolute (26.04)                — built in Docker
+# Build the release .debs for GitHub Releases, one per supported suite:
+#   jammy    (Ubuntu 22.04 libc/libstdc++) — built natively on the ubuntu-22.04 runner
+#   noble    (Ubuntu 24.04)                — built in Docker
+#   resolute (Ubuntu 26.04)                — built in Docker
+#   bookworm (Debian 12)                   — built in Docker
+#   trixie   (Debian 13)                   — built in Docker
 #
-# Only jammy is native because the CI job runs on ubuntu-22.04; every newer
+# Only jammy is native because the CI job runs on ubuntu-22.04; every other
 # suite is built in its own container so we never depend on a newer (or
 # preview-status) GitHub runner image just to get a matching libstdc++.
 #
@@ -21,6 +23,8 @@ rm -f "${OUT}"/*.deb
 DOCKER_SUITES=(
   "noble=ubuntu:24.04"
   "resolute=ubuntu:26.04"
+  "bookworm=debian:12"
+  "trixie=debian:13"
 )
 
 # Docker runs as root; .deb files are root-owned on the host — plain mv fails for CI user (e.g. runner).
