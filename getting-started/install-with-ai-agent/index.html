@@ -1217,32 +1217,34 @@ bạn thuộc nhánh phải build từ source (agent sẽ tự clone).</p>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>   fcitx5-configtool bằng package manager của distro trước.
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>3. Chọn đúng một cách cài:
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>   - Ubuntu 22.04 (jammy) / 24.04 (noble) / 26.04 (resolute)
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>     → APT repo của dự án, có thêm khoá GPG (mục &quot;Cách 1&quot; trong README).
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>   - Debian, hoặc Ubuntu có codename khác ba cái trên
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>     → tải .deb mới nhất từ GitHub Releases, chọn hậu tố gần nhất,
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>       cài bằng `sudo apt install -y ./&lt;file&gt;.deb`.
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>   - Fedora / CentOS
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>     → tải .rpm từ Releases, `sudo dnf install -y ./&lt;file&gt;.rpm`.
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>   - Distro khác (Arch, openSUSE, ...)
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>     → clone repo, cài dependency, build từ source theo mục &quot;Cách 5&quot;.
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>4. Khởi động lại fcitx5: `fcitx5 -r`.
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>   - Ubuntu 22.04 (jammy) / 24.04 (noble) / 26.04 (resolute),
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>     Debian 12 (bookworm) / 13 (trixie)
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>     → APT repo của dự án, có thêm khoá GPG (mục &quot;Cách 1&quot; trong README).
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>   - Ubuntu/Debian có codename khác năm cái trên
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>     → tải .deb mới nhất từ GitHub Releases, chọn hậu tố gần nhất,
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>       cài bằng `sudo apt install -y ./&lt;file&gt;.deb`.
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>   - Fedora / CentOS
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>     → tải .rpm từ Releases, chọn bản khớp `rpm -E %fedora` (`~fedora43`
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>       hoặc `~fedora44`), rồi `sudo dnf install -y ./&lt;file&gt;.rpm`.
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>   - Distro khác (Arch, openSUSE, ...)
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>     → clone repo, cài dependency, build từ source theo mục &quot;Cách 5&quot;.
 <a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>5. Xác minh. Chạy `telebit doctor` nếu lệnh đó tồn tại (chỉ bản mới mới
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>   kèm CLI này). Nếu doctor báo dòng ✘, đọc phần gợi ý của nó, sửa, rồi
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>   chạy lại cho tới khi sạch. Nếu không có lệnh `telebit`, kiểm tra bằng:
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>   `ls /usr/lib/*/fcitx5/telebit-fcitx5.so /usr/lib64/fcitx5/telebit-fcitx5.so 2&gt;/dev/null`
-<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>
-<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>Quy tắc:
-<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>- Giải thích mỗi lệnh trước khi chạy nó.
-<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>- Không chạy lệnh xoá/ghi đè ngoài phạm vi việc cài này.
-<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>- Không sửa dotfile hay cấu hình cá nhân của tôi, trừ khi việc cài bắt buộc
-<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>  và bạn đã nói rõ lý do trước.
-<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>- Bước nào fail thì dừng và báo tôi, đừng tự đổi sang cách khác.
-<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>Xong thì nhắc tôi: mở fcitx5-configtool → tab Input Method → Add →
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>chọn &quot;Vietnamese Telex (UTF-8) - Telebit&quot;, rồi logout/login nếu chưa thấy.
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>4. Khởi động lại fcitx5: `fcitx5 -r`.
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>5. Xác minh. Chạy `telebit doctor` nếu lệnh đó tồn tại (chỉ bản mới mới
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>   kèm CLI này). Nếu doctor báo dòng ✘, đọc phần gợi ý của nó, sửa, rồi
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>   chạy lại cho tới khi sạch. Nếu không có lệnh `telebit`, kiểm tra bằng:
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>   `ls /usr/lib/*/fcitx5/telebit-fcitx5.so /usr/lib64/fcitx5/telebit-fcitx5.so 2&gt;/dev/null`
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>Quy tắc:
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>- Giải thích mỗi lệnh trước khi chạy nó.
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>- Không chạy lệnh xoá/ghi đè ngoài phạm vi việc cài này.
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>- Không sửa dotfile hay cấu hình cá nhân của tôi, trừ khi việc cài bắt buộc
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>  và bạn đã nói rõ lý do trước.
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>- Bước nào fail thì dừng và báo tôi, đừng tự đổi sang cách khác.
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>Xong thì nhắc tôi: mở fcitx5-configtool → tab Input Method → Add →
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>chọn &quot;Vietnamese Telex (UTF-8) - Telebit&quot;, rồi logout/login nếu chưa thấy.
 </code></pre></div>
 <h2 id="3-sau-khi-agent-chay-xong">3. Sau khi agent chạy xong<a class="headerlink" href="#3-sau-khi-agent-chay-xong" title="Permanent link">&para;</a></h2>
 <p>Agent cài được gói, nhưng <strong>bước cuối vẫn phải làm tay</strong> — fcitx5 không cho phép thêm input

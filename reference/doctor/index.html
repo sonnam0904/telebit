@@ -892,13 +892,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ba-khoi-trong-bao-cao" class="md-nav__link">
+  <a href="#bon-khoi-trong-bao-cao" class="md-nav__link">
     <span class="md-ellipsis">
-      Ba khối trong báo cáo
+      Bốn khối trong báo cáo
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Ba khối trong báo cáo">
+    <nav class="md-nav" aria-label="Bốn khối trong báo cáo">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -914,6 +914,15 @@
   <a href="#fcitx5" class="md-nav__link">
     <span class="md-ellipsis">
       fcitx5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ung-dung-cai-truc-tiep-debrpm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Ứng dụng cài trực tiếp (.deb/.rpm)
     </span>
   </a>
   
@@ -1143,13 +1152,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ba-khoi-trong-bao-cao" class="md-nav__link">
+  <a href="#bon-khoi-trong-bao-cao" class="md-nav__link">
     <span class="md-ellipsis">
-      Ba khối trong báo cáo
+      Bốn khối trong báo cáo
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Ba khối trong báo cáo">
+    <nav class="md-nav" aria-label="Bốn khối trong báo cáo">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1165,6 +1174,15 @@
   <a href="#fcitx5" class="md-nav__link">
     <span class="md-ellipsis">
       fcitx5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ung-dung-cai-truc-tiep-debrpm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Ứng dụng cài trực tiếp (.deb/.rpm)
     </span>
   </a>
   
@@ -1244,15 +1262,23 @@
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>└───┴──────────────────────────┴───────────────────────────────────────┘
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>┌──────────────────────────────────────────────────────────────────────┐
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│ Ứng dụng đóng hộp (sandbox)                                          │
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│ Ứng dụng cài trực tiếp (.deb/.rpm)                                   │
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>├───┬──────────────────────────┬───────────────────────────────────────┤
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>│ ✔ │ flatpak:org.gnome.Plat…  │ GTK3 fcitx5 · GTK4 fcitx5 · Qt n/a    │
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>│ · │ org.gnome.meld           │ override GTK_IM_MODULE=fcitx          │
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>│ ! │ snap:gnome-46-2404       │ GTK3 fcitx4 · GTK4 thiếu · Qt thiếu   │
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>│   │                          │ ↳ Module GTK3 là bản fcitx4…          │
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>│ · │ chromium                 │ —                                     │
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>│ · │ firefox                  │ —                                     │
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>└───┴──────────────────────────┴───────────────────────────────────────┘
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>│ ✔ │ Module GTK trên host     │ GTK3 fcitx5 · GTK4 fcitx5             │
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>│ ✔ │ Module Qt trên host      │ Qt5 fcitx5 · Qt6 fcitx5               │
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>│ ✔ │ Cache immodule GTK3      │ có fcitx                              │
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>└───┴──────────────────────────┴───────────────────────────────────────┘
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>┌──────────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>│ Ứng dụng đóng hộp (sandbox)                                          │
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>├───┬──────────────────────────┬───────────────────────────────────────┤
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>│ ✔ │ flatpak:org.gnome.Plat…  │ GTK3 fcitx5 · GTK4 fcitx5 · Qt n/a    │
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>│ · │ org.gnome.meld           │ override GTK_IM_MODULE=fcitx          │
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>│ ! │ snap:gnome-46-2404       │ GTK3 fcitx4 · GTK4 thiếu · Qt thiếu   │
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>│   │                          │ ↳ Module GTK3 là bản fcitx4…          │
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>│ · │ chromium                 │ —                                     │
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>│ · │ firefox                  │ —                                     │
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>└───┴──────────────────────────┴───────────────────────────────────────┘
 </code></pre></div>
 <p>Ký hiệu ở cột đầu:</p>
 <table>
@@ -1281,7 +1307,7 @@
 </tr>
 </tbody>
 </table>
-<h2 id="ba-khoi-trong-bao-cao">Ba khối trong báo cáo<a class="headerlink" href="#ba-khoi-trong-bao-cao" title="Permanent link">&para;</a></h2>
+<h2 id="bon-khoi-trong-bao-cao">Bốn khối trong báo cáo<a class="headerlink" href="#bon-khoi-trong-bao-cao" title="Permanent link">&para;</a></h2>
 <h3 id="phien-lam-viec">Phiên làm việc<a class="headerlink" href="#phien-lam-viec" title="Permanent link">&para;</a></h3>
 <p>Biến IM ở đây <strong>không phải</strong> của terminal bạn đang gõ, mà đọc từ tiến trình compositor —
 tức là môi trường các ứng dụng thật sự nhận. Hai cái khác nhau là chuyện thường, thường
@@ -1339,6 +1365,120 @@ do terminal được mở từ trước lần đăng nhập gần nhất; doctor
 </tbody>
 </table>
 <p>Bật/tắt các frontend trong <code>fcitx5-configtool</code> → <strong>Addons</strong>.</p>
+<h3 id="ung-dung-cai-truc-tiep-debrpm">Ứng dụng cài trực tiếp (.deb/.rpm)<a class="headerlink" href="#ung-dung-cai-truc-tiep-debrpm" title="Permanent link">&para;</a></h3>
+<p>Khối này nói về mọi ứng dụng cài thẳng lên máy — <code>apt</code>, <code>dnf</code>, <code>pacman</code>, không phải sandbox.
+Ứng dụng loại này gõ được hay không phụ thuộc vào <strong>module client</strong> của fcitx5 cho đúng toolkit
+mà nó dùng, và mỗi toolkit là một gói cài riêng:</p>
+<table>
+<thead>
+<tr>
+<th>Ô trong bảng</th>
+<th>Gói cần cài (Debian/Ubuntu)</th>
+<th>Fedora / openSUSE / Arch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GTK3 thiếu</code></td>
+<td><code>fcitx5-frontend-gtk3</code></td>
+<td><code>fcitx5-gtk</code></td>
+</tr>
+<tr>
+<td><code>GTK4 thiếu</code></td>
+<td><code>fcitx5-frontend-gtk4</code></td>
+<td><code>fcitx5-gtk</code></td>
+</tr>
+<tr>
+<td><code>Qt5 thiếu</code></td>
+<td><code>fcitx5-frontend-qt5</code></td>
+<td><code>fcitx5-qt</code></td>
+</tr>
+<tr>
+<td><code>Qt6 thiếu</code></td>
+<td><code>fcitx5-frontend-qt6</code></td>
+<td><code>fcitx5-qt</code></td>
+</tr>
+</tbody>
+</table>
+<p>Qt5 và Qt6 được tách riêng vì chúng là hai gói độc lập: máy chỉ có Qt6 mà thiếu plugin Qt5
+thì không có gì phải sửa, nên ô đó là <code>n/a</code> chứ không phải <code>thiếu</code>.</p>
+<p>Khác với sandbox, thiếu module ở đây <strong>sửa được</strong> — và mức độ phụ thuộc vào biến môi trường
+của session:</p>
+<table>
+<thead>
+<tr>
+<th>Tình huống</th>
+<th>Kết quả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GTK_IM_MODULE=fcitx</code> (hoặc <code>QT_IM_MODULE</code>) mà module tương ứng không có, <strong>và có app dùng toolkit đó</strong></td>
+<td><code>✘</code> <strong>Đang hỏng.</strong> Biến trỏ tới module không tồn tại nên toolkit rơi về bộ gõ mặc định của nó — <strong>kể cả trên Wayland</strong>, vì biến này chặn luôn đường text-input-v3.</td>
+</tr>
+<tr>
+<td>Cùng tình huống, nhưng <strong>không app nào</strong> dùng toolkit đó và scan kết luận được hết</td>
+<td><code>!</code> Rủi ro chưa xảy ra, exit code vẫn 0. Cài một app dùng toolkit đó thì nó thành lỗi thật.</td>
+</tr>
+<tr>
+<td>Biến để trống, session Wayland</td>
+<td><code>·</code> Không sao, ứng dụng đi thẳng text-input-v3 qua compositor.</td>
+</tr>
+<tr>
+<td>Biến để trống, session X11</td>
+<td><code>!</code> Rủi ro; phần thiếu biến đã được khối <strong>Phiên làm việc</strong> báo riêng.</td>
+</tr>
+</tbody>
+</table>
+<p>Khi có ô <code>thiếu</code>, doctor liệt kê luôn <strong>app nào trên máy đang dùng toolkit đó</strong>, để dòng đó
+không dừng ở mức "rủi ro":</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>│ ✘ │ Module GTK trên host │ GTK3 fcitx5 · GTK4 thiếu                              │
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>│   │                      │ ↳ GTK_IM_MODULE=fcitx trỏ tới module GTK4 không có…   │
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>│ ✘ │   app dùng GTK4      │ Calculator, Files, Fonts, Online Accounts … và 1 nữa  │
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>│   │                      │ ↳ Dò 71 ứng dụng cài trực tiếp; 13 app không đọc được │
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>│   │                      │   toolkit nên danh sách này có thể còn thiếu.         │
+</code></pre></div>
+<p>Danh sách được dựng từ desktop entry trong <code>/usr/share/applications</code>, <code>/usr/local/share/applications</code>
+và <code>~/.local/share/applications</code> (không tính Flatpak/Snap — chúng thuộc khối sau), rồi đọc thư viện
+thật của từng binary bằng <strong>một</strong> lệnh <code>ldd</code> cho toàn bộ danh sách. Chỉ chạy khi có ô <code>thiếu</code>, nên
+máy đủ module không phải trả phí này.</p>
+<p>Hai điều danh sách <strong>không</strong> làm, và lý do:</p>
+<ul>
+<li>Nó chỉ khẳng định chiều dương ("app này có dùng GTK4"), không bao giờ khẳng định chiều âm. App
+  bọc bằng script (<code>soffice</code>) hoặc tự <code>dlopen</code> toolkit (Firefox nạp GTK qua <code>libxul</code>) không đọc
+  được toolkit từ binary, nên chúng được <strong>đếm</strong> vào phần "không đọc được" chứ không bị kết luận
+  là không ảnh hưởng. Cùng nhóm đó là app khởi động qua interpreter (<code>env</code>, <code>sh</code>, <code>python3</code>,
+  <code>gjs</code>) và app nằm ngoài <code>/usr</code>, <code>/opt</code>, <code>/bin</code>, <code>/sbin</code>: <code>ldd</code> phải chạy ELF interpreter của
+  file nó xem, nên doctor không đưa binary ngoài các prefix hệ thống cho nó — desktop entry đến
+  từ <code>~/.local/share/applications</code> là chỗ người dùng ghi được.</li>
+<li>Nó cắt danh sách ở 8 tên, nhưng luôn nói rõ còn bao nhiêu app nữa — danh sách bị cắt lặng lẽ
+  sẽ bị đọc thành danh sách đầy đủ.</li>
+</ul>
+<p>Chính vì chỉ khẳng định chiều dương, kết quả scan có quyền <strong>hạ</strong> mức nghiêm trọng chứ không
+được xoá nó:</p>
+<ul>
+<li>Không app nào dùng toolkit đang thiếu <strong>và</strong> mọi app đều đọc được toolkit → dòng cha hạ từ <code>✘</code>
+  xuống <code>!</code>, dòng con là <code>·</code>, exit code về 0. Máy không hỏng, chỉ đang có một cấu hình chờ hỏng.</li>
+<li>Không app nào dùng toolkit đang thiếu <strong>nhưng</strong> còn app không đọc được toolkit → giữ <code>✘</code>. "Không
+  app nào dùng GTK4" lúc đó chỉ là phỏng đoán, mà phỏng đoán thì không được tha một lỗi.</li>
+<li>Scan không dò được app nào (không có <code>ldd</code>, không đọc được <code>/usr/share/applications</code>, chạy trong
+  container) → giữ <code>✘</code>, và dòng con nói thẳng "không dò được app nào". Danh sách rỗng không phải
+  bằng chứng.</li>
+<li>Một họ toolkit có hai ô <code>thiếu</code> (ví dụ GTK3 có app dùng, GTK4 không) → vẫn <code>✘</code>, vì một trong
+  hai ô đã có nạn nhân.</li>
+</ul>
+<p>Dòng <strong>Cache immodule GTK3</strong> là một lỗi âm thầm mà không chỗ nào khác trong báo cáo thấy được:
+GTK3 chỉ nạp immodule nào có trong <code>immodules.cache</code>, nên file <code>im-fcitx5.so</code> nằm trên đĩa vẫn
+có thể không bao giờ được nạp nếu cache được ghi trước khi module xuất hiện (copy tay, hoặc
+trigger của gói không chạy). GTK4 không cần kiểm tra tương tự — nó quét thẳng thư mục immodules.</p>
+<p>Phép so là <strong>với đúng tên file đang cài</strong>, không phải với chữ "fcitx": cache còn giữ entry
+<code>im-fcitx.so</code> của gói fcitx4 trong khi <code>im-fcitx5.so</code> mới là cái đang cài vẫn là cache cũ, và
+doctor gọi thẳng tên file mà cache đang trỏ tới để bạn biết cần dựng lại nó:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>│ ✘ │ Cache immodule GTK3  │ đăng ký im-fcitx.so                                   │
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>│   │                      │ ↳ Module im-fcitx5.so có trên đĩa nhưng cache không    │
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>│   │                      │   đăng ký nó… Cache đang đăng ký im-fcitx.so — bản     │
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>│   │                      │   module của gói cũ.                                  │
+</code></pre></div>
 <h3 id="ung-dung-sandbox">Ứng dụng sandbox<a class="headerlink" href="#ung-dung-sandbox" title="Permanent link">&para;</a></h3>
 <p>Mỗi dòng ở mức ngoài cùng là một <strong>runtime</strong> (Flatpak) hoặc <strong>platform snap</strong>; các dòng thụt
 vào dưới nó là ứng dụng đang chạy trên đó. Phán quyết gắn với runtime chứ không với từng ứng
@@ -1400,25 +1540,42 @@ chúng.</p>
 <td>Snap thiếu quyền</td>
 <td>Chạy đúng lệnh <code>snap connect</code> mà doctor gợi ý</td>
 </tr>
+<tr>
+<td><code>✘ Module GTK/Qt trên host — … thiếu</code></td>
+<td>Session đang yêu cầu một module client chưa được cài, <strong>và</strong> có app native dùng toolkit đó — dòng con liệt kê chính các app đang hỏng</td>
+<td>Cài gói module theo <a href="#ung-dung-cai-truc-tiep-debrpm">bảng ở trên</a> — doctor in ra đúng lệnh cần chạy</td>
+</tr>
+<tr>
+<td><code>! Module GTK/Qt trên host — … thiếu</code></td>
+<td>Cùng chuyện, nhưng chưa app nào dùng toolkit đó. Chưa hỏng, sẽ hỏng khi bạn cài một app như vậy</td>
+<td>Cài trước cho yên tâm, hoặc bỏ qua đến khi thật cần</td>
+</tr>
+<tr>
+<td><code>✘ Cache immodule GTK3 — đăng ký im-fcitx.so</code></td>
+<td>Cache còn giữ entry của gói fcitx4 cũ, <code>im-fcitx5.so</code> đang cài thì không được đăng ký nên GTK3 không nạp nó</td>
+<td><code>sudo apt install --reinstall fcitx5-frontend-gtk3</code>, hoặc chạy lại <code>gtk-query-immodules-3.0 --update-cache</code></td>
+</tr>
 </tbody>
 </table>
 <h2 id="-deep-khi-nao-can"><code>--deep</code> — khi nào cần<a class="headerlink" href="#-deep-khi-nao-can" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>telebit<span class="w"> </span>doctor<span class="w"> </span>--deep
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>telebit<span class="w"> </span>doctor<span class="w"> </span>--deep
 </code></pre></div>
-<p>Mặc định doctor chỉ đọc filesystem, đủ để trả lời "module có tồn tại không". <code>--deep</code>
-khởi động một shell dùng một lần bên trong <strong>từng</strong> ứng dụng để xem biến môi trường
-thật sự tới nơi hay không.</p>
+<p>Mặc định doctor không vào trong sandbox nào: nó đọc filesystem, hỏi D-Bus, và — chỉ khi
+có ô <code>thiếu</code> — chạy một lệnh <code>ldd</code> để biết app native nào dùng toolkit đó. <code>--deep</code> thì
+khởi động một shell dùng một lần bên trong <strong>từng</strong> ứng dụng sandbox để xem biến môi
+trường thật sự tới nơi hay không.</p>
 <p>Dùng khi một ứng dụng cụ thể không gõ được trong khi các ứng dụng khác cùng runtime thì
 bình thường — nguyên nhân hay gặp là ứng dụng đó có <code>flatpak override</code> riêng.</p>
 <h2 id="-markdown-khi-bao-loi"><code>--markdown</code> — khi báo lỗi<a class="headerlink" href="#-markdown-khi-bao-loi" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>telebit<span class="w"> </span>doctor<span class="w"> </span>--markdown
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>telebit<span class="w"> </span>doctor<span class="w"> </span>--markdown
 </code></pre></div>
 <p>In bản không màu, dạng bảng, để dán vào <a href="https://github.com/sonnam0904/telebit/issues/new">issue trên GitHub</a>.</p>
 <div class="admonition tip">
 <p class="admonition-title">Cần chi tiết phần host?</p>
-<p><code>telebit doctor</code> cố tình không đụng tới locale, <code>ldd</code>, cache immodule — <code>fcitx5-diagnose</code>
-(cài kèm fcitx5) đã làm những thứ đó rất kỹ. Hai lệnh bổ sung cho nhau: doctor lo phần
-sandbox và phiên đồ hoạ, <code>fcitx5-diagnose</code> lo phần host.</p>
+<p><code>telebit doctor</code> cố tình không đụng tới locale và cấu hình chi tiết của fcitx5 —
+<code>fcitx5-diagnose</code> (cài kèm fcitx5) đã làm những thứ đó rất kỹ. Hai lệnh bổ sung cho nhau:
+doctor lo phiên đồ hoạ, module client trên host, ứng dụng native và phần sandbox;
+<code>fcitx5-diagnose</code> lo phần còn lại.</p>
 </div>
 
 
