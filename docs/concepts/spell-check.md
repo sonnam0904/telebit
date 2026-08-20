@@ -63,23 +63,34 @@ Cách chữa: **gõ lặp phím phụ** để huỷ nó.
 | `ooo` | `oo` | `cooool` → coool |
 | `ddd` | `dd` | `edddy` → eddy |
 | `ww` | `w` | `sunwworld` → sunworld |
-| `…aa` ở cuối từ | huỷ mũ | `dataa` → data |
+| `…aa` `…ee` `…oo` ở cuối từ | huỷ mũ | `dataa` → data, `mongoo` → mongo |
 
-### Trường hợp `aa` ở cuối từ
+### Trường hợp `aa` / `ee` / `oo` ở cuối từ
 
-Telex cho phép phím phụ đứng **sau âm cuối** — nên `data` được hiểu là `dât`. Gõ thêm một chữ
-`a` nữa để huỷ:
+Telex cho phép phím phụ đứng **sau âm cuối** — nên `data` được hiểu là `dât` và `mongo` được
+hiểu là `mông`. Gõ thêm một chữ nữa để huỷ:
 
 ```
-data  → dât
-dataa → data     ✅
+data  → dât        mongo  → mông
+dataa → data  ✅    mongoo → mongo  ✅
 ```
 
-Rule này **chỉ áp dụng cho chữ `a`**, và chỉ khi `aa` nằm **cuối** những gì bạn đã gõ. Lý do:
-tiếng Anh cực hiếm từ có hai chữ `a` liền nhau, trong khi `ee` và `oo` thì đầy (`coffee`,
-`agree`, `zoo`) nên áp dụng tương tự sẽ phá nhiều hơn là sửa.
+Rule áp dụng cho cả ba nguyên âm mũ `a` `e` `o`, nhưng có **hai điều kiện chặt** giữ tiếng Anh
+an toàn: chữ đôi phải nằm **cuối** những gì bạn đã gõ, và **tiền tố phải thực sự đã sinh ra
+mũ**. Điều kiện thứ hai là thứ loại `zoo`, `igloo`, `agree`, `kangaroo` — tiền tố `zo`, `iglo`,
+`agre`, `kangaro` chưa có mũ nào để mà huỷ, nên chúng ra nguyên chữ.
 
-Vì thế các từ *có chứa* `aa` nhưng không ở cuối vẫn an toàn:
+Cái giá: một từ tiếng Anh *thật sự* kết thúc bằng đôi nguyên âm mà tiền tố đã có mũ thì cần
+thêm một phím, đúng quy ước leo thang của `chesss` → chess:
+
+```
+tepe → têp     tepee → tepe     tepeee → tepee  ✅
+```
+
+Đổi lại, nếu không có rule này thì `mongo` **không có cách nào gõ ra được**: mũ luôn nhảy vào
+và không số lượng `o` nào gỡ ra nổi.
+
+Các từ *có chứa* chữ đôi nhưng không ở cuối vẫn an toàn:
 
 ```
 salaam → salaam      bazaar → bazaar      aardvark → aardvark

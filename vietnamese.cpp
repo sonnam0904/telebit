@@ -53,14 +53,8 @@ static std::string convert_word(const std::string& word, const TelexOptions& opt
         return convert_word_vni(word, lower, opts);
     }
 
-    // Telex: "gif" -> "gì". "f" is huyền on "i", but "gi" is also a valid onset so the
-    // generic parser would treat the whole syllable as onset "gi" and drop the tone.
-    if (lower == "gif") {
-        return applyWordCase("gì", word);
-    }
-
     std::string escapedRaw;
-    if (applyEscapeRules(word, lower, escapedRaw)) {
+    if (applyEscapeRules(word, lower, escapedRaw, opts.spellCheckRestore)) {
         return escapedRaw;
     }
 

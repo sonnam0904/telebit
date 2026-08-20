@@ -46,3 +46,6 @@ openwiki/
 .env
 .env.*
 !.env.example
+
+# dict round-trip harness work dir
+scripts/dict-roundtrip/.work/

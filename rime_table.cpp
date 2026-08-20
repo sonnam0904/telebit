@@ -24,8 +24,9 @@ const std::unordered_map<std::string, int>& getRimeMainVowelTable() {
         add("E", 0);
         add("o", 0); add("oi", 0); add("oa", 0); add("oe", 0);
         add("O", 0); add("Q", 0);
-        // oai/oay: tone is placed on 'a' (second vowel)
+        // oai/oay/oao: tone is placed on 'a' (second vowel)
         add("oai", 1); add("oay", 1);
+        add("oao", 1);  // oao: ngoáo, khoào
         add("u", 0); add("ua", 0); add("ui", 0); add("uy", 0);
         add("U", 0);
         add("y", 0);
@@ -62,6 +63,19 @@ const std::unordered_map<std::string, int>& getRimeMainVowelTable() {
         add("om", 0); add("op", 0); add("Om", 0); add("Op", 0);
         add("Qm", 0); add("Qp", 0); add("um", 0); add("up", 0);
         add("UQm", 1); add("UQp", 1);
+        // ưm: outside the standard rime inventory, but "hừm" and "ừm" are written
+        // often enough to be worth typing. Costs nothing on the English side.
+        add("Um", 0);
+        // uôm: buồm, nhuộm, luộm thuộm, chuôm (tone on ô)
+        add("uOm", 1);
+        // oam/oăm/oap/oăp: ngoạm, khoằm, oăm, ngoạp, soạp (tone on a/ă)
+        add("oam", 1); add("oAm", 1); add("oap", 1); add("oAp", 1);
+        // oem: ngoém, ngoẻm (tone on e)
+        add("oem", 1);
+        // yêm: yếm, yểm (tone on ê)
+        add("yEm", 1);
+        // uyp: tuýp, quỵp (tone on y)
+        add("uyp", 1);
 
         // n/t finals
         add("an", 0); add("at", 0); add("An", 0); add("At", 0);
@@ -84,6 +98,12 @@ const std::unordered_map<std::string, int>& getRimeMainVowelTable() {
         add("ang", 0); add("ac", 0); add("Ang", 0); add("Ac", 0);
         add("Bng", 0); add("Bc", 0); add("eng", 0); add("ec", 0);
         add("iEng", 1); add("iEc", 1);
+        // êng: giếng, giêng, ễng (tone on ê)
+        add("Eng", 0);
+        // yêng: yêng, yểng (tone on ê)
+        add("yEng", 1);
+        // oeng: xoẻng, loẻng (tone on e)
+        add("oeng", 1);
         add("ong", 0); add("oc", 0); add("Ong", 0); add("Oc", 0);
         add("ung", 0); add("uc", 0); add("Ung", 0); add("Uc", 0);
         add("uOng", 1); add("uOc", 1); add("UQng", 1); add("UQc", 1);
@@ -93,10 +113,14 @@ const std::unordered_map<std::string, int>& getRimeMainVowelTable() {
         // nh/ch finals
         add("anh", 0); add("ach", 0); add("Enh", 0); add("Ech", 0);
         add("inh", 0); add("ich", 0); add("oanh", 1); add("oach", 1);
-        add("uynh", 0); add("uych", 1);
+        // uynh: the tone belongs on 'y', like every other uy + coda rime
+        // (huỳnh, quỳnh, luýnh) — index 0 spelled them "hùynh".
+        add("uynh", 1); add("uych", 1);
+        // uênh/uêch: huênh hoang, xuềnh xoàng, khuếch đại, nguệch ngoạc
+        add("uEnh", 1); add("uEch", 1);
 
-        // uyn/uyt
-        add("uyn", 0); add("uyt", 1);
+        // uyn/uyt — tone on 'y' for both, same rule as uynh/uych above
+        add("uyn", 1); add("uyt", 1);
 
         return m;
     }();

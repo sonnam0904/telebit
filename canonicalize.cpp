@@ -37,31 +37,42 @@ static bool telexWordConverts(const std::string& lowerWord, std::string* outShap
     return isValidSyllable(onset, shaped);
 }
 
-// Telex lets the hat key land after the coda, so "data" already reads as "dât".
-// Repeating the key is the user's undo, but the escape table above only sees
-// adjacent doubles ("aaa"), so "dataa" used to fall through to the spell-check
-// restore and keep both a's. Handle the non-adjacent case here — for 'a' only:
-// English words with two consecutive a's are vanishingly rare, while "ee"/"oo"
-// are common enough ("coffee", "agree", "zoo") that the same rule would misfire.
+// Telex lets the hat key land after the coda, so "data" already reads as "dât"
+// and "mongo" as "mông". Repeating the key is the user's undo, but the escape
+// table above only sees adjacent doubles ("aaa"), so "dataa" / "mongoo" used to
+// fall through to the spell-check restore and keep both vowels. Handle the
+// non-adjacent case here, for all three hat vowels.
 //
-// Scoped to a trailing "aa" so a word that merely contains one ("Canaan",
-// "salaam") is never touched. The prefix must already have produced "â" ('B' in
-// the shaped rime), which is what makes the adjacent case fall out for free:
-// "caa" has prefix "ca" with no hat yet, so it still converts to "câ".
+// Two guards keep English out. The double must be *trailing*, so a word that
+// merely contains one ("Canaan", "salaam", "voodoo") is never touched. And the
+// prefix must already have produced the hat itself — 'B'/'E'/'O' in the shaped
+// rime — which is what rules out "zoo", "igloo", "tree", "coffee" (their
+// prefixes "zo", "iglo", "tre", "coffe" carry no hat) and what makes the
+// adjacent case fall out for free: "caa" has prefix "ca" with no hat yet, so it
+// still converts to "câ", and "moo" still converts to "mô".
 static bool applyTrailingHatEscape(const std::string& word, const std::string& lower,
                                    std::string& outRaw) {
     const std::size_t n = lower.size();
-    if (n < 3 || lower[n - 1] != 'a' || lower[n - 2] != 'a') return false;
+    if (n < 3 || lower[n - 1] != lower[n - 2]) return false;
+
+    char hat = '\0';
+    switch (lower[n - 1]) {
+        case 'a': hat = 'B'; break;
+        case 'e': hat = 'E'; break;
+        case 'o': hat = 'O'; break;
+        default: return false;
+    }
 
     std::string shaped;
     if (!telexWordConverts(lower.substr(0, n - 1), &shaped)) return false;
-    if (shaped.find('B') == std::string::npos) return false;
+    if (shaped.find(hat) == std::string::npos) return false;
 
     outRaw = word.substr(0, n - 1);
     return true;
 }
 
-bool applyEscapeRules(const std::string& word, const std::string& lower, std::string& outRaw) {
+bool applyEscapeRules(const std::string& word, const std::string& lower, std::string& outRaw,
+                      bool spellCheckRestore) {
     struct Esc { const char* pat; int patLen; int outLen; bool toneKey; };
     const Esc escapes[] = {
         {"ss", 2, 1, true}, {"ff", 2, 1, true}, {"rr", 2, 1, true},
@@ -87,6 +98,19 @@ bool applyEscapeRules(const std::string& word, const std::string& lower, std::st
                     if (isAsciiVowel(lower[i])) { vowelBefore = true; break; }
                 }
                 if (!vowelBefore || !telexWordConverts(lower.substr(0, p + 1))) {
+                    from = p + 1;
+                    continue;
+                }
+                // ...and the undo must actually be needed. The user only reaches for
+                // it when typing the keys straight through would have converted, so
+                // the whole word has to be a syllable too. Without this, every
+                // English word whose double happens to sit behind a syllable-shaped
+                // prefix loses a letter: "coffee" -> "cofee", "mission" -> "mision".
+                // Those words need no escape — the spell-check restore below already
+                // hands back the raw keys — so declining here is free. Only with the
+                // restore turned off would declining leave a conversion in place,
+                // hence the gate.
+                if (spellCheckRestore && !telexWordConverts(lower)) {
                     from = p + 1;
                     continue;
                 }
@@ -124,6 +148,34 @@ bool normalizeTripleVowels(std::string& s) {
     return changed;
 }
 
+// "gi" and "qu" are listed as onsets, but each swallows a vowel that the rime
+// needs back in two cases the onset list cannot express on its own.
+//
+// "gi" with nothing left is really g + i, so a tone has a vowel to land on:
+// "gis" -> gí, "gif" -> gì. Splitting it as onset "gi" + an empty rime dropped
+// the tone silently.
+//
+// "qu" before y + a consonant coda is really q + uy..., so the tone lands on
+// 'y' via the uyn/uynh/uyt/uyp entries ("quynh" -> quỳnh, "quyt" -> quýt). Bare
+// "quy" keeps the "qu" split so the classic style still writes "quý", and so do
+// "quya"/"quyu": "ya" and "yu" are not codas, so those are not syllables and
+// must restore to the raw keys rather than grow a tone.
+//
+// Both splitters call this. Leaving it out of the shaped one is what made VNI
+// drop the tone on "gi" while Telex kept it.
+static void rejoinOnsetVowel(std::string& onset, std::string& rime) {
+    if (onset == "gi" && rime.empty()) {
+        onset = "g";
+        rime = "i";
+        return;
+    }
+    if (onset == "qu" && rime.size() >= 2 && rime[0] == 'y' &&
+        kInternalVowels.find(rime[1]) == std::string_view::npos) {
+        onset = "q";
+        rime.insert(rime.begin(), 'u');
+    }
+}
+
 void splitOnsetRime(const std::string& body, std::string& onset, std::string& rimeRaw) {
     onset.clear();
     rimeRaw.clear();
@@ -155,6 +207,7 @@ void splitOnsetRime(const std::string& body, std::string& onset, std::string& ri
             if (rest.empty() || isAsciiVowel(rest[0]) || rest[0] == 'w') {
                 onset = o;
                 rimeRaw = rest;
+                rejoinOnsetVowel(onset, rimeRaw);
                 return;
             }
         }
@@ -277,6 +330,13 @@ std::string applyShapesRime(std::string s) {
         out.push_back(s[i]);
         ++i;
     }
+
+    // "ươ" needs a coda or a glide (ươi, ươu, ương, ước...); bare "ươ" is not a
+    // Vietnamese rime, while bare "uơ" is (huơ, khuơ, quơ, thuở). Deciding this
+    // on the finished rime rather than by looking ahead mid-scan keeps the two
+    // spellings that reach it in agreement: "uow" collapses here, and "uwow" —
+    // which builds 'U' and 'Q' through separate branches — collapses too.
+    if (out == "UQ") return "uQ";
     return out;
 }
 
@@ -514,6 +574,7 @@ void splitOnsetRimeShaped(const std::string& body, std::string& onset, std::stri
             if (rest.empty() || isVowelPh(rest[0])) {
                 onset = o;
                 rime = rest;
+                rejoinOnsetVowel(onset, rime);
                 return;
             }
         }

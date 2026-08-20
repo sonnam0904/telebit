@@ -1,0 +1,39 @@
+Vietnamese syllable list — dict/vietnamese
+==========================================
+
+Extracted from the Debian/Ubuntu package `hunspell-vi` (version 1:24.2.1-1),
+file /usr/share/hunspell/vi_VN.dic, which comes from the LibreOffice
+dictionaries collection. The extraction drops the leading entry-count line and
+the hunspell affix flags after "/"; no word was added, removed or altered.
+
+Upstream-Name: libreoffice-dictionaries
+Upstream-Contact: <libreoffice@lists.freedesktop.org>
+Source: http://download.documentfoundation.org/libreoffice
+
+Files: dictionaries/vi/*
+Copyright: Ivan Garcia <capiscuas@gmail.com>
+           Nguyễn Xuân Minh <mxn@zoomtown.com>
+License: GPL-2
+
+License: GPL-2
+ This is free software; you can redistribute it and/or modify
+ it under the terms of version 2 of the GNU General Public
+ License version 2 as published by the Free Software Foundation.
+ .
+ This is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General
+ Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
+
+The full text of the GNU General Public License version 2 is also available at
+https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+
+NOTE: telebit itself is MIT licensed (see ../LICENSE). This word list is
+included only as test data. It is read at test time, never linked into or
+shipped with any binary, and the .deb and .rpm packages do not contain it.

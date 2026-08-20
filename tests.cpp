@@ -51,8 +51,11 @@ static void test_vowels() {
     assert(telex_to_unicode("oo") == "ô");
     assert(telex_to_unicode("ow") == "ơ");
     assert(telex_to_unicode("uw") == "ư");
-    // "ươ" can be typed as "uow" in addition to "uw" + context.
-    assert(telex_to_unicode("uow") == "ươ");
+    // "ươ" can be typed as "uow" in addition to "uw" + context — but only where
+    // something follows it. Bare "ươ" is no Vietnamese rime, so a syllable-final
+    // "uow" is uơ (huơ, quơ, thuở); see test_uo_vs_uouw.
+    assert(telex_to_unicode("uow") == "uơ");
+    assert(telex_to_unicode("uowi") == "ươi");
     assert(telex_to_unicode("dd") == "đ");
 
     // Tone with z keeps tone, z is literal (only without the spell-check gate).
@@ -164,6 +167,154 @@ static void test_trailing_hat_escape() {
     assert(telex_to_unicode("soffa") == "sofa");
     assert(telex_to_unicode("javaa") == "javaa");
     assert(telex_to_unicode("pandaa") == "pandaa");
+
+    // Same rule for the other two hat vowels: "mongo" reads as "mông", so the
+    // repeated "o" is the undo that restores the literal "mongo".
+    assert(telex_to_unicode("mongo") == "mông");
+    assert(telex_to_unicode("mongoo") == "mongo");
+    assert(telex_to_unicode("Mongoo") == "Mongo");
+    assert(telex_to_unicode("bongoo") == "bongo");
+    assert(telex_to_unicode("congoo") == "congo");
+    // "ooo"/"eee" escape first, so one more key gives the literal double.
+    assert(telex_to_unicode("mongooo") == "mongoo");
+    // A trailing double whose prefix never grew a hat keeps plain Telex: these
+    // are the English words the rule must not touch.
+    assert(telex_to_unicode("zoo") == "zoo");
+    assert(telex_to_unicode("igloo") == "igloo");
+    assert(telex_to_unicode("voodoo") == "voodoo");
+    assert(telex_to_unicode("kangaroo") == "kangaroo");
+    assert(telex_to_unicode("agree") == "agree");
+    assert(telex_to_unicode("moo") == "mô");
+    assert(telex_to_unicode("tree") == "trê");
+    // Only a *trailing* double escapes: "mongoose" keeps its raw keys.
+    assert(telex_to_unicode("mongoose") == "mongoose");
+    assert(telex_to_unicode("mongoos") == "mongoos");
+}
+
+// Rimes the spell-check table used to be missing: the conversion was correct but
+// the gate rejected it, so the user got their raw keys back instead of the word.
+static void test_rimes_from_dictionary() {
+    // uôm
+    assert(telex_to_unicode("buoomf") == "buồm");
+    assert(telex_to_unicode("nhuoomj") == "nhuộm");
+    assert(telex_to_unicode("luoomj thuoomj") == "luộm thuộm");
+    // oam / oăm / oap / oăp
+    assert(telex_to_unicode("ngoamj") == "ngoạm");
+    assert(telex_to_unicode("khoawmf") == "khoằm");
+    assert(telex_to_unicode("soajp") == "soạp");
+    // uênh / uêch
+    assert(telex_to_unicode("hueenh hoang") == "huênh hoang");
+    assert(telex_to_unicode("khueechs ddaji") == "khuếch đại");
+    assert(telex_to_unicode("ngueechj ngoacj") == "nguệch ngoạc");
+    // êng (gi + êng) và yêm/yêng
+    assert(telex_to_unicode("gieengs") == "giếng");
+    assert(telex_to_unicode("gieeng") == "giêng");
+    assert(telex_to_unicode("yeems") == "yếm");
+    assert(telex_to_unicode("yeengr") == "yểng");
+    // ưm — an interjection rime, not a standard one
+    assert(telex_to_unicode("huwmf") == "hừm");
+    assert(telex_to_unicode("uwmf") == "ừm");
+    // oao / oem / oeng / uyp
+    assert(telex_to_unicode("ngoaos") == "ngoáo");
+    assert(telex_to_unicode("ngoems") == "ngoém");
+    assert(telex_to_unicode("xoengr") == "xoẻng");
+    assert(telex_to_unicode("tuyps") == "tuýp");
+}
+
+// uy + coda carries the tone on 'y'; the uynh entry used to point at 'u'.
+static void test_uynh_tone_placement() {
+    assert(telex_to_unicode("huynhf") == "huỳnh");
+    assert(telex_to_unicode("khuynhr") == "khuỷnh");
+    assert(telex_to_unicode("luynhs") == "luýnh");
+    assert(telex_to_unicode("huychs") == "huých");
+    // "qu" + y + coda is q + uy..., so these route through the same entries.
+    assert(telex_to_unicode("quynhf") == "quỳnh");
+    assert(telex_to_unicode("quyts") == "quýt");
+    assert(telex_to_unicode("quytj") == "quỵt");
+    // Every uy + coda rime agrees on where the tone goes, uyn included.
+    assert(telex_to_unicode("quyns") == "quýn");
+    assert(telex_to_unicode("quynf") == "quỳn");
+    assert(telex_to_unicode("quyps") == "quýp");
+    assert(telex_to_unicode("quychs") == "quých");
+    // ...while bare "quy" keeps the "qu" onset: classic style writes "quý".
+    assert(telex_to_unicode("quys") == "quý");
+    assert(telex_to_unicode("quyf") == "quỳ");
+    assert(telex_to_unicode("quyeenr") == "quyển");
+    // "ya"/"yu" are not codas, so those are not syllables and stay raw rather
+    // than growing a tone through the rejoin.
+    assert(telex_to_unicode("quyaf") == "quyaf");
+    assert(telex_to_unicode("quyuf") == "quyuf");
+}
+
+// The gi/qu rejoin lives in a helper both splitters call, so VNI must agree
+// with Telex; it used to drop the tone on "gi" exactly as Telex once did.
+static void test_vni_matches_telex_for_gi_and_qu() {
+    const TelexOptions vni = vni_opts();
+    assert(telex_to_unicode("gi1", vni) == "gí");
+    assert(telex_to_unicode("gi2", vni) == "gì");
+    assert(telex_to_unicode("gi3", vni) == "gỉ");
+    assert(telex_to_unicode("gi4", vni) == "gĩ");
+    assert(telex_to_unicode("gi5", vni) == "gị");
+    assert(telex_to_unicode("quynh2", vni) == "quỳnh");
+    assert(telex_to_unicode("quyt1", vni) == "quýt");
+    assert(telex_to_unicode("huynh2", vni) == "huỳnh");
+    // Same words, Telex spelling — the two must not disagree.
+    assert(telex_to_unicode("gis") == "gí");
+    assert(telex_to_unicode("quynhf") == "quỳnh");
+    assert(telex_to_unicode("quyts") == "quýt");
+}
+
+// Bare "ươ" is not a rime, so a syllable-final "uow" must land on uơ.
+static void test_uo_vs_uouw() {
+    assert(telex_to_unicode("huow") == "huơ");
+    assert(telex_to_unicode("khuow") == "khuơ");
+    assert(telex_to_unicode("quow") == "quơ");
+    assert(telex_to_unicode("thuowr") == "thuở");
+    assert(telex_to_unicode("uowr") == "uở");
+    // Anything after the "uow" is still ươ.
+    assert(telex_to_unicode("nguowif") == "người");
+    assert(telex_to_unicode("ruowuj") == "rượu");
+    assert(telex_to_unicode("uownf") == "ườn");
+    assert(telex_to_unicode("thuowngf") == "thường");
+    // Decided on the finished rime, not by looking ahead mid-scan, so the other
+    // keystroke order that reaches the same rime agrees instead of splitting.
+    assert(telex_to_unicode("uwow") == telex_to_unicode("uow"));
+    assert(telex_to_unicode("huwow") == telex_to_unicode("huow"));
+    assert(telex_to_unicode("nguwow") == telex_to_unicode("nguow"));
+}
+
+// The trailing-hat undo eats the key that applied the hat, so a word that
+// genuinely ends in the doubled vowel needs one more press — the same
+// escalation as "chesss" -> chess. Pinned because the middle step looks like
+// data loss and someone will otherwise "fix" it by reverting e/o.
+static void test_trailing_hat_escalation() {
+    assert(telex_to_unicode("tepe") == "têp");
+    assert(telex_to_unicode("tepee") == "tepe");
+    assert(telex_to_unicode("tepeee") == "tepee");
+    assert(telex_to_unicode("lessee") == "lesse");
+    assert(telex_to_unicode("lesseee") == "lessee");
+    assert(telex_to_unicode("epeee") == "epee");
+    // Without the rule "mongo" would have no spelling at all: the hat lands on
+    // it unconditionally and no number of trailing o's would take it back off.
+    assert(telex_to_unicode("mongo") == "mông");
+    assert(telex_to_unicode("mongoo") == "mongo");
+}
+
+// "gi" is an onset, but with nothing left it is really g + i and the tone needs
+// that 'i' to land on. Only "gif" used to be special-cased; the rest fell off.
+static void test_gi_onset_keeps_tone() {
+    assert(telex_to_unicode("gi") == "gi");
+    assert(telex_to_unicode("gif") == "gì");
+    assert(telex_to_unicode("gis") == "gí");
+    assert(telex_to_unicode("gir") == "gỉ");
+    assert(telex_to_unicode("gix") == "gĩ");
+    assert(telex_to_unicode("gij") == "gị");
+    assert(telex_to_unicode("Gif") == "Gì");
+    assert(telex_to_unicode("GIF") == "GÌ");
+    // The multi-vowel "gi" syllables are untouched.
+    assert(telex_to_unicode("gia") == "gia");
+    assert(telex_to_unicode("giaf") == "già");
+    assert(telex_to_unicode("gioongs") == "giống");
 }
 
 static void test_open_glide_rimes() {
@@ -186,6 +337,31 @@ static void test_open_glide_rimes() {
     // uây (uBy) — tone on â (khuây).
     assert(telex_to_unicode("khuaay") == "khuây");
     assert(telex_to_unicode("khuaayj") == "khuậy");
+}
+
+static void test_double_tone_key_needs_a_conversion() {
+    // The doubled tone key is an undo, and there is only something to undo when the
+    // raw keys would have converted. "sofa" is a syllable ("sòa"), so "soffa" must
+    // still collapse to the literal "sofa"...
+    assert(telex_to_unicode("sofa") == "sòa");
+    assert(telex_to_unicode("soffa") == "sofa");
+    assert(telex_to_unicode("ass") == "as");
+    assert(telex_to_unicode("chuss") == "chus");
+    // ...while an English word that merely carries a syllable-shaped prefix keeps
+    // every letter: nothing converted, so nothing needs undoing.
+    assert(telex_to_unicode("coffee") == "coffee");
+    assert(telex_to_unicode("toffee") == "toffee");
+    assert(telex_to_unicode("office") == "office");
+    assert(telex_to_unicode("mission") == "mission");
+    assert(telex_to_unicode("essay") == "essay");
+    assert(telex_to_unicode("assign") == "assign");
+    assert(telex_to_unicode("afford") == "afford");
+    assert(telex_to_unicode("affair") == "affair");
+    assert(telex_to_unicode("suffer") == "suffer");
+    assert(telex_to_unicode("difference") == "difference");
+    // The rule leans on the spell-check restore to hand back the raw keys; with the
+    // restore off, the old unconditional escape is still the best available answer.
+    assert(telex_to_unicode("coffee", no_spell_check_opts()) == "cofee");
 }
 
 static void test_spell_check_restore() {
@@ -457,7 +633,13 @@ static void test_any_position_modifiers() {
     assert(telex_to_unicode("uoiwr") == "ưởi");
     // Double tone escape: whole word is returned literally, with the pair collapsed.
     assert(telex_to_unicode("ass") == "as");
-    assert(telex_to_unicode("tieengssabc") == "tieengsabc");
+    // ...but only while the raw keys would otherwise have converted. "tieengssabc"
+    // is no syllable, so the spell-check restore keeps every key the user typed
+    // (see test_double_tone_key_needs_a_conversion). Without the restore the old
+    // literal-passthrough behavior stands.
+    assert(telex_to_unicode("tieengssabc") == "tieengssabc");
+    assert(telex_to_unicode("tieengssabc", no_spell_check_opts()) == "tieengsabc");
+    // The "ww" escape is unconditional: 'w' is never a plain Vietnamese letter.
     assert(telex_to_unicode("tieengwwabc") == "tieengwabc");
     // Triple vowel escape: whole word literal, with triple collapsed to double.
     assert(telex_to_unicode("tieengaaabc") == "tieengaabc");
@@ -559,6 +741,7 @@ int main() {
     test_mixed_vietnamese_english();
     test_triple_vowels_english();
     test_trailing_hat_escape();
+    test_double_tone_key_needs_a_conversion();
     test_all_vowel_tone_combinations();
     test_basic_word_tones();
     test_additional_words();
@@ -566,6 +749,12 @@ int main() {
     test_any_position_modifiers();
     test_incremental_typing_detection();
     test_open_glide_rimes();
+    test_rimes_from_dictionary();
+    test_uynh_tone_placement();
+    test_uo_vs_uouw();
+    test_trailing_hat_escalation();
+    test_vni_matches_telex_for_gi_and_qu();
+    test_gi_onset_keeps_tone();
     test_spell_check_restore();
     test_vni_mode();
     test_modern_tone_style();

@@ -159,6 +159,10 @@ Có sẵn helper cho các cấu hình khác: `vni_opts()`, `no_spell_check_opts(
     Khi thêm rule mới, thêm luôn cả ca **không nên** bị chuyển — xem
     `test_spell_check_restore()` và `test_trailing_hat_escape()` làm mẫu.
 
+`tests.cpp` chỉ phủ những ca có người nghĩ ra. Trước khi mở PR hãy chạy thêm
+[kiểm tra bằng từ điển](dictionary-check.md) — nó chạy cả từ điển tiếng Việt lẫn tiếng Anh qua
+engine và gọi tên từng từ mà thay đổi của bạn làm hỏng hoặc sửa được.
+
 
 
 ## CI
@@ -209,6 +213,7 @@ addon, nên hai bên không thể mâu thuẫn.
 
 ## Liên quan
 
+- [Kiểm tra bằng từ điển](dictionary-check.md) — bắt buộc chạy trước khi mở PR
 - [Kiến trúc](architecture.md) — luồng chuyển đổi và vai trò từng file
 - [Kiểm tra chính tả & escape](../concepts/spell-check.md) — phần dễ hỏng nhất khi sửa
 

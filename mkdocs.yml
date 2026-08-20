@@ -91,6 +91,7 @@ nav:
       - Chuyển từ vnkey: reference/migrate-from-vnkey.md
   - Phát triển:
       - Build & test: dev/build-and-test.md
+      - Kiểm tra bằng từ điển: dev/dictionary-check.md
       - Kiến trúc: dev/architecture.md
 
 extra:

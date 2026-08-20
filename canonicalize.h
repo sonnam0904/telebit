@@ -6,7 +6,10 @@
 namespace telebit::internal {
 
 // Applies IME escape rules (literal passthrough with collapse). Returns true if triggered.
-bool applyEscapeRules(const std::string& word, const std::string& lower, std::string& outRaw);
+// `spellCheckRestore` mirrors TelexOptions: when the caller will restore the raw keys for
+// an invalid syllable anyway, doubled tone keys need a narrower escape rule (see the .cpp).
+bool applyEscapeRules(const std::string& word, const std::string& lower, std::string& outRaw,
+                      bool spellCheckRestore);
 
 // Normalizes English-like triple-vowel runs without turning them into Vietnamese shapes.
 // Returns true if any change was made.
