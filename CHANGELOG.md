@@ -1,3 +1,10 @@
+# [2.11.0](https://github.com/sonnam0904/telebit/compare/v2.10.0...v2.11.0) (2026-08-20)
+
+
+### Features
+
+* fix tone placement, add missing rimes, gate the double-tone escape, ([6c0e8fc](https://github.com/sonnam0904/telebit/commit/6c0e8fcd052ee6eb0537ba46b87711e05e2f5895))
+
 # [2.10.0](https://github.com/sonnam0904/telebit/compare/v2.9.0...v2.10.0) (2026-08-10)
 
 
