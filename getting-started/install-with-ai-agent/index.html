@@ -1044,6 +1044,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../dev/dictionary-check/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kiểm tra bằng từ điển
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../dev/architecture/" class="md-nav__link">
         
   
@@ -1219,7 +1240,7 @@ bạn thuộc nhánh phải build từ source (agent sẽ tự clone).</p>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>3. Chọn đúng một cách cài:
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>   - Ubuntu 22.04 (jammy) / 24.04 (noble) / 26.04 (resolute),
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>     Debian 12 (bookworm) / 13 (trixie)
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>     → APT repo của dự án, có thêm khoá GPG (mục &quot;Cách 1&quot; trong README).
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>     → APT repo của dự án, có thêm khoá GPG (mục "Cách 1" trong README).
 <a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>   - Ubuntu/Debian có codename khác năm cái trên
 <a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>     → tải .deb mới nhất từ GitHub Releases, chọn hậu tố gần nhất,
 <a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>       cài bằng `sudo apt install -y ./&lt;file&gt;.deb`.
@@ -1227,7 +1248,7 @@ bạn thuộc nhánh phải build từ source (agent sẽ tự clone).</p>
 <a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>     → tải .rpm từ Releases, chọn bản khớp `rpm -E %fedora` (`~fedora43`
 <a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>       hoặc `~fedora44`), rồi `sudo dnf install -y ./&lt;file&gt;.rpm`.
 <a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>   - Distro khác (Arch, openSUSE, ...)
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>     → clone repo, cài dependency, build từ source theo mục &quot;Cách 5&quot;.
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>     → clone repo, cài dependency, build từ source theo mục "Cách 5".
 <a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
 <a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>4. Khởi động lại fcitx5: `fcitx5 -r`.
 <a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
@@ -1244,7 +1265,7 @@ bạn thuộc nhánh phải build từ source (agent sẽ tự clone).</p>
 <a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>- Bước nào fail thì dừng và báo tôi, đừng tự đổi sang cách khác.
 <a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>
 <a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>Xong thì nhắc tôi: mở fcitx5-configtool → tab Input Method → Add →
-<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>chọn &quot;Vietnamese Telex (UTF-8) - Telebit&quot;, rồi logout/login nếu chưa thấy.
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>chọn "Vietnamese Telex (UTF-8) - Telebit", rồi logout/login nếu chưa thấy.
 </code></pre></div>
 <h2 id="3-sau-khi-agent-chay-xong">3. Sau khi agent chạy xong<a class="headerlink" href="#3-sau-khi-agent-chay-xong" title="Permanent link">&para;</a></h2>
 <p>Agent cài được gói, nhưng <strong>bước cuối vẫn phải làm tay</strong> — fcitx5 không cho phép thêm input

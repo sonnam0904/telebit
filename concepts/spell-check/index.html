@@ -831,9 +831,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#truong-hop-aa-o-cuoi-tu" class="md-nav__link">
+  <a href="#truong-hop-aa-ee-oo-o-cuoi-tu" class="md-nav__link">
     <span class="md-ellipsis">
-      Trường hợp aa ở cuối từ
+      Trường hợp aa / ee / oo ở cuối từ
     </span>
   </a>
   
@@ -1077,6 +1077,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../dev/dictionary-check/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kiểm tra bằng từ điển
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../dev/architecture/" class="md-nav__link">
         
   
@@ -1162,9 +1183,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#truong-hop-aa-o-cuoi-tu" class="md-nav__link">
+  <a href="#truong-hop-aa-ee-oo-o-cuoi-tu" class="md-nav__link">
     <span class="md-ellipsis">
-      Trường hợp aa ở cuối từ
+      Trường hợp aa / ee / oo ở cuối từ
     </span>
   </a>
   
@@ -1259,7 +1280,7 @@ những phím bạn đã gõ.</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>toolbox → toolbox    employee → employee   zoo → zoo
 </code></pre></div>
 <p>Mà tiếng Việt vẫn chuyển bình thường, kể cả khi đang gõ dở:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>tieengs → tiếng      nguyeenx → nguyễn     tiee → tiê  (đang trên đường tới &quot;tiên&quot;)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>tieengs → tiếng      nguyeenx → nguyễn     tiee → tiê  (đang trên đường tới "tiên")
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Tắt SpellCheckRestore thì sao?</p>
@@ -1332,27 +1353,34 @@ hợp lệ</strong>, và khi đó engine không có cách nào biết bạn mu�
 <td><code>sunwworld</code> → sunworld</td>
 </tr>
 <tr>
-<td><code>…aa</code> ở cuối từ</td>
+<td><code>…aa</code> <code>…ee</code> <code>…oo</code> ở cuối từ</td>
 <td>huỷ mũ</td>
-<td><code>dataa</code> → data</td>
+<td><code>dataa</code> → data, <code>mongoo</code> → mongo</td>
 </tr>
 </tbody>
 </table>
-<h3 id="truong-hop-aa-o-cuoi-tu">Trường hợp <code>aa</code> ở cuối từ<a class="headerlink" href="#truong-hop-aa-o-cuoi-tu" title="Permanent link">&para;</a></h3>
-<p>Telex cho phép phím phụ đứng <strong>sau âm cuối</strong> — nên <code>data</code> được hiểu là <code>dât</code>. Gõ thêm một chữ
-<code>a</code> nữa để huỷ:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>data  → dât
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>dataa → data     ✅
+<h3 id="truong-hop-aa-ee-oo-o-cuoi-tu">Trường hợp <code>aa</code> / <code>ee</code> / <code>oo</code> ở cuối từ<a class="headerlink" href="#truong-hop-aa-ee-oo-o-cuoi-tu" title="Permanent link">&para;</a></h3>
+<p>Telex cho phép phím phụ đứng <strong>sau âm cuối</strong> — nên <code>data</code> được hiểu là <code>dât</code> và <code>mongo</code> được
+hiểu là <code>mông</code>. Gõ thêm một chữ nữa để huỷ:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>data  → dât        mongo  → mông
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>dataa → data  ✅    mongoo → mongo  ✅
 </code></pre></div>
-<p>Rule này <strong>chỉ áp dụng cho chữ <code>a</code></strong>, và chỉ khi <code>aa</code> nằm <strong>cuối</strong> những gì bạn đã gõ. Lý do:
-tiếng Anh cực hiếm từ có hai chữ <code>a</code> liền nhau, trong khi <code>ee</code> và <code>oo</code> thì đầy (<code>coffee</code>,
-<code>agree</code>, <code>zoo</code>) nên áp dụng tương tự sẽ phá nhiều hơn là sửa.</p>
-<p>Vì thế các từ <em>có chứa</em> <code>aa</code> nhưng không ở cuối vẫn an toàn:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>salaam → salaam      bazaar → bazaar      aardvark → aardvark
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Isaac → Isaac        Canaan → Canaan      graal → graal
+<p>Rule áp dụng cho cả ba nguyên âm mũ <code>a</code> <code>e</code> <code>o</code>, nhưng có <strong>hai điều kiện chặt</strong> giữ tiếng Anh
+an toàn: chữ đôi phải nằm <strong>cuối</strong> những gì bạn đã gõ, và <strong>tiền tố phải thực sự đã sinh ra
+mũ</strong>. Điều kiện thứ hai là thứ loại <code>zoo</code>, <code>igloo</code>, <code>agree</code>, <code>kangaroo</code> — tiền tố <code>zo</code>, <code>iglo</code>,
+<code>agre</code>, <code>kangaro</code> chưa có mũ nào để mà huỷ, nên chúng ra nguyên chữ.</p>
+<p>Cái giá: một từ tiếng Anh <em>thật sự</em> kết thúc bằng đôi nguyên âm mà tiền tố đã có mũ thì cần
+thêm một phím, đúng quy ước leo thang của <code>chesss</code> → chess:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>tepe → têp     tepee → tepe     tepeee → tepee  ✅
+</code></pre></div>
+<p>Đổi lại, nếu không có rule này thì <code>mongo</code> <strong>không có cách nào gõ ra được</strong>: mũ luôn nhảy vào
+và không số lượng <code>o</code> nào gỡ ra nổi.</p>
+<p>Các từ <em>có chứa</em> chữ đôi nhưng không ở cuối vẫn an toàn:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>salaam → salaam      bazaar → bazaar      aardvark → aardvark
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>Isaac → Isaac        Canaan → Canaan      graal → graal
 </code></pre></div>
 <p>Và tiếng Việt không bị ảnh hưởng, vì <code>caa</code> chưa tạo ra mũ nào để mà huỷ:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>caa → câ      caan → cân      khuaay → khuây      aa → â
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>caa → câ      caan → cân      khuaay → khuây      aa → â
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Gõ cả đoạn tiếng Anh dài?</p>

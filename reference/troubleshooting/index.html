@@ -1104,6 +1104,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../dev/dictionary-check/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kiểm tra bằng từ điển
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../dev/architecture/" class="md-nav__link">
         
   
@@ -1279,7 +1300,7 @@ thư mục lib addon của <strong>bản build chính nó</strong> — thường
 <code>$HOME/.local/lib/fcitx5</code>.</p>
 <p>Kiểm tra file đã nằm đúng chỗ:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>ls<span class="w"> </span>-l<span class="w"> </span>/usr/lib/*/fcitx5/telebit-fcitx5.so<span class="w"> </span>/usr/lib/fcitx5/telebit-fcitx5.so<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>ls<span class="w"> </span>-l<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/lib/fcitx5/telebit-fcitx5.so&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>ls<span class="w"> </span>-l<span class="w"> </span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/.local/lib/fcitx5/telebit-fcitx5.so"</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null
 </code></pre></div>
 <p>Nếu chỉ thấy ở <code>$HOME/.local</code> → <a href="../../getting-started/installation/#cmake">cài lại toàn hệ thống</a>.</p>
 <p><strong>3. Thiếu file mô tả addon</strong></p>
@@ -1291,7 +1312,7 @@ thư mục lib addon của <strong>bản build chính nó</strong> — thường
 <h2 id="khong-chuyen-doi">Gõ ra tiếng Anh, không thành tiếng Việt<a class="headerlink" href="#khong-chuyen-doi" title="Permanent link">&para;</a></h2>
 <p><strong>1. fcitx5 không điều khiển bàn phím</strong></p>
 <p>Addon cài đúng nhưng ứng dụng vẫn nói chuyện với IBus. Kiểm tra:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$GTK_IM_MODULE</span><span class="s2"> </span><span class="nv">$QT_IM_MODULE</span><span class="s2"> </span><span class="nv">$XMODIFIERS</span><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="nv">$GTK_IM_MODULE</span><span class="s2"> </span><span class="nv">$QT_IM_MODULE</span><span class="s2"> </span><span class="nv">$XMODIFIERS</span><span class="s2">"</span>
 </code></pre></div>
 <p>Phải ra <code>fcitx fcitx @im=fcitx</code>. Nếu không, xem
 <a href="../../getting-started/first-use/">Dùng lần đầu → Bước 1</a>.</p>
@@ -1371,7 +1392,7 @@ sẽ đi sửa mọi dòng <code>!</code> trong báo cáo — phần lớn khôn
 <a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>2. Xác định ứng dụng đang lỗi thuộc loại nào: `flatpak list --app`,
 <a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>   `snap list`, hay là app cài thẳng trên máy.
 <a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>
-<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>3. Nếu nó là Flatpak/Snap và bảng &quot;Ứng dụng sandbox&quot; chưa đủ kết luận, chạy
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>3. Nếu nó là Flatpak/Snap và bảng "Ứng dụng sandbox" chưa đủ kết luận, chạy
 <a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>   `telebit doctor --deep --markdown`. Lệnh này mở shell bên trong từng
 <a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>   sandbox để đọc biến môi trường thật, tốn vài giây mỗi app.
 <a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>
@@ -1380,7 +1401,7 @@ sẽ đi sửa mọi dòng <code>!</code> trong báo cáo — phần lớn khôn
 <a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>
 <a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>Cách đọc bảng, để không sửa nhầm chỗ:
 <a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>- `✘` = đang hỏng thật. Xử lý trước tiên.
-<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>- `!` = rủi ro, CHƯA CHẮC là nguyên nhân. Ví dụ dòng &quot;GTK4 thiếu&quot; ở một
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>- `!` = rủi ro, CHƯA CHẮC là nguyên nhân. Ví dụ dòng "GTK4 thiếu" ở một
 <a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>  platform snap không có nghĩa app của tôi hỏng — app GTK3 trên cùng runtime
 <a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>  đó vẫn gõ bình thường. Chỉ đụng tới nếu app đang lỗi thật sự dùng toolkit đó.
 <a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>- `·` = chỉ là thông tin, không phải kết quả phân tích.

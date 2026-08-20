@@ -1053,6 +1053,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../dev/dictionary-check/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kiểm tra bằng từ điển
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../dev/architecture/" class="md-nav__link">
         
   
@@ -1176,7 +1197,7 @@ và <strong>thêm Telebit vào danh sách input method</strong>.</p>
 </code></pre></div>
 <p>systemd đọc file này lúc khởi tạo user session, nên <strong>phải logout/login</strong> (hoặc reboot)
 thì mới có tác dụng. Kiểm tra sau khi login lại:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$GTK_IM_MODULE</span><span class="s2"> </span><span class="nv">$QT_IM_MODULE</span><span class="s2"> </span><span class="nv">$XMODIFIERS</span><span class="s2">&quot;</span><span class="w">   </span><span class="c1"># -&gt; fcitx fcitx @im=fcitx</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="nv">$GTK_IM_MODULE</span><span class="s2"> </span><span class="nv">$QT_IM_MODULE</span><span class="s2"> </span><span class="nv">$XMODIFIERS</span><span class="s2">"</span><span class="w">   </span><span class="c1"># -&gt; fcitx fcitx @im=fcitx</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>fcitx5<span class="w"> </span>-d
 </code></pre></div>
 <div class="admonition warning">

@@ -12,11 +12,13 @@
         <meta name="author" content="sonnam0904">
       
       
-        <link rel="canonical" href="https://sonnam0904.github.io/telebit/dev/architecture/">
+        <link rel="canonical" href="https://sonnam0904.github.io/telebit/dev/dictionary-check/">
       
       
-        <link rel="prev" href="../dictionary-check/">
+        <link rel="prev" href="../build-and-test/">
       
+      
+        <link rel="next" href="../architecture/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -24,7 +26,7 @@
     
     
       
-        <title>Kiến trúc - Telebit</title>
+        <title>Kiểm tra bằng từ điển - Telebit</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kien-truc" class="md-skip">
+        <a href="#kiem-tra-bang-tu-ien-truoc-khi-mo-pr" class="md-skip">
           Bỏ qua
         </a>
       
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Kiến trúc
+              Kiểm tra bằng từ điển
             
           </span>
         </div>
@@ -963,27 +965,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../dictionary-check/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Kiểm tra bằng từ điển
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -1000,7 +981,7 @@
           
   
   <span class="md-ellipsis">
-    Kiến trúc
+    Kiểm tra bằng từ điển
   </span>
   
 
@@ -1011,7 +992,7 @@
         
   
   <span class="md-ellipsis">
-    Kiến trúc
+    Kiểm tra bằng từ điển
   </span>
   
 
@@ -1033,28 +1014,55 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#cay-source" class="md-nav__link">
+  <a href="#vi-sao-can" class="md-nav__link">
     <span class="md-ellipsis">
-      Cây source
+      Vì sao cần
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#luong-chuyen-oi" class="md-nav__link">
+  <a href="#chuan-bi" class="md-nav__link">
     <span class="md-ellipsis">
-      Luồng chuyển đổi
+      Chuẩn bị
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Luồng chuyển đổi">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quy-trinh" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quy trình
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quy trình">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#vai-iem-ang-chu-y" class="md-nav__link">
+  <a href="#1-chay-tren-nhanh-sach-truoc" class="md-nav__link">
     <span class="md-ellipsis">
-      Vài điểm đáng chú ý
+      1. Chạy trên nhánh sạch trước
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-sua-code-roi-chay-lai" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Sửa code, rồi chạy lại
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-oc-ket-qua" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Đọc kết quả
     </span>
   </a>
   
@@ -1066,9 +1074,51 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#addon-fcitx5" class="md-nav__link">
+  <a href="#ba-nhan-va-cach-xu-ly" class="md-nav__link">
     <span class="md-ellipsis">
-      Addon fcitx5
+      Ba nhãn và cách xử lý
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ba nhãn và cách xử lý">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#khi-moi-hong-la-anh-oi-co-chu-y" class="md-nav__link">
+    <span class="md-ellipsis">
+      Khi Mới hỏng là đánh đổi có chủ ý
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cap-nhat-baseline-va-ua-vao-pr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cập nhật baseline và đưa vào PR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checklist-truoc-khi-mo-pr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Checklist trước khi mở PR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gioi-han-can-biet" class="md-nav__link">
+    <span class="md-ellipsis">
+      Giới hạn cần biết
     </span>
   </a>
   
@@ -1087,6 +1137,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kiến trúc
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -1126,28 +1197,55 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#cay-source" class="md-nav__link">
+  <a href="#vi-sao-can" class="md-nav__link">
     <span class="md-ellipsis">
-      Cây source
+      Vì sao cần
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#luong-chuyen-oi" class="md-nav__link">
+  <a href="#chuan-bi" class="md-nav__link">
     <span class="md-ellipsis">
-      Luồng chuyển đổi
+      Chuẩn bị
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Luồng chuyển đổi">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quy-trinh" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quy trình
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quy trình">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#vai-iem-ang-chu-y" class="md-nav__link">
+  <a href="#1-chay-tren-nhanh-sach-truoc" class="md-nav__link">
     <span class="md-ellipsis">
-      Vài điểm đáng chú ý
+      1. Chạy trên nhánh sạch trước
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-sua-code-roi-chay-lai" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Sửa code, rồi chạy lại
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-oc-ket-qua" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Đọc kết quả
     </span>
   </a>
   
@@ -1159,9 +1257,51 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#addon-fcitx5" class="md-nav__link">
+  <a href="#ba-nhan-va-cach-xu-ly" class="md-nav__link">
     <span class="md-ellipsis">
-      Addon fcitx5
+      Ba nhãn và cách xử lý
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ba nhãn và cách xử lý">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#khi-moi-hong-la-anh-oi-co-chu-y" class="md-nav__link">
+    <span class="md-ellipsis">
+      Khi Mới hỏng là đánh đổi có chủ ý
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cap-nhat-baseline-va-ua-vao-pr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cập nhật baseline và đưa vào PR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checklist-truoc-khi-mo-pr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Checklist trước khi mở PR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gioi-han-can-biet" class="md-nav__link">
+    <span class="md-ellipsis">
+      Giới hạn cần biết
     </span>
   </a>
   
@@ -1194,91 +1334,282 @@
   
 
 
-<h1 id="kien-truc">Kiến trúc<a class="headerlink" href="#kien-truc" title="Permanent link">&para;</a></h1>
-<p>Telebit gồm hai phần tách rời:</p>
-<ul>
-<li><strong>Core C++</strong> — hàm <code>telex_to_unicode()</code>, dùng độc lập được, không phụ thuộc fcitx5</li>
-<li><strong>Addon fcitx5</strong> — <code>telebit-fcitx5/</code>, bọc core lại thành input method</li>
-</ul>
-<h2 id="cay-source">Cây source<a class="headerlink" href="#cay-source" title="Permanent link">&para;</a></h2>
+<h1 id="kiem-tra-bang-tu-ien-truoc-khi-mo-pr">Kiểm tra bằng từ điển trước khi mở PR<a class="headerlink" href="#kiem-tra-bang-tu-ien-truoc-khi-mo-pr" title="Permanent link">&para;</a></h1>
+<p><code>telebit_telex_tests</code> chỉ kiểm những âm tiết đã có người nghĩ ra và viết vào file test. Nó
+không nói được rằng thay đổi của bạn vừa làm hỏng 20 từ khác mà chưa ai nghĩ tới.</p>
+<p><code>scripts/dict-roundtrip/run.sh</code> làm việc đó: chạy <strong>toàn bộ từ điển</strong> qua engine và <strong>gọi tên
+từng từ</strong> mà thay đổi của bạn làm hỏng, làm đúng lại, hoặc làm ra kết quả khác trước.</p>
+<div class="admonition warning">
+<p class="admonition-title">Bước này không nằm trong CI</p>
+</div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>CI chỉ chạy `telebit_telex_tests` và test CLI. Kiểm tra từ điển là việc bạn phải tự chạy
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>trước khi mở PR — và đính kèm baseline mới nếu có thay đổi.
+</code></pre></div>
+<h2 id="vi-sao-can">Vì sao cần<a class="headerlink" href="#vi-sao-can" title="Permanent link">&para;</a></h2>
+<p>Nó chạy hai chiều ngược nhau, và hai chiều này kéo nhau:</p>
 <table>
 <thead>
 <tr>
-<th>File</th>
-<th>Vai trò</th>
+<th>Chiều</th>
+<th>Kiểm gì</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>vietnamese.h/.cpp</code></td>
-<td>Entry point <code>telex_to_unicode()</code> — glue, xử lý theo từng từ</td>
+<td><strong>Tiếng Việt</strong> (round-trip)</td>
+<td>Âm tiết → chuỗi phím Telex → convert lại → phải ra đúng âm tiết ban đầu</td>
 </tr>
 <tr>
-<td><code>engine.h/.cpp</code></td>
-<td><code>EngineVietCpp</code> — quản lý buffer theo từng phím, addon dùng lớp này</td>
-</tr>
-<tr>
-<td><code>canonicalize.h/.cpp</code></td>
-<td>Escape rules, tách âm đầu/vần, chuẩn hoá vị trí <code>w</code>/<code>aa</code>/<code>ee</code>/<code>oo</code>, trích thanh</td>
-</tr>
-<tr>
-<td><code>rime_table.h/.cpp</code></td>
-<td>Bảng vần + vị trí nguyên âm chính để đặt dấu</td>
-</tr>
-<tr>
-<td><code>render_utf8.h/.cpp</code></td>
-<td>Render biểu diễn nội bộ → UTF-8, áp dấu, giữ hoa/thường</td>
-</tr>
-<tr>
-<td><code>telebit-fcitx5/</code></td>
-<td>Addon fcitx5 (preedit, direct commit, config, trợ lý AI)</td>
-</tr>
-<tr>
-<td><code>tests.cpp</code></td>
-<td>Bộ test của core</td>
+<td><strong>Tiếng Anh</strong> (passthrough)</td>
+<td>Từ tiếng Anh gõ trong chế độ tiếng Việt → phải ra y hệt, không byte nào đổi</td>
 </tr>
 </tbody>
 </table>
-<h2 id="luong-chuyen-oi">Luồng chuyển đổi<a class="headerlink" href="#luong-chuyen-oi" title="Permanent link">&para;</a></h2>
-<p><code>telex_to_unicode()</code> tách chuỗi thành từ, rồi mỗi từ đi qua:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>từ thô
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  → kiểm tra có đủ điều kiện chuyển đổi (chỉ chữ; số chỉ tính khi bật VNI)
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  → applyEscapeRules()        huỷ phím phụ khi gõ lặp (ss, aaa, ddd, ww, …)
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  → extractTone()             tách thanh ra khỏi thân từ
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  → normalizeTripleVowels()   gộp nguyên âm ba của tiếng Anh
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  → splitOnsetRime()          tách âm đầu / vần
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  → canonicalizeRimeByTable() chuẩn hoá vần theo bảng
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  → applyShapesRime()         quy về biểu diễn nội bộ (â='B', ơ='Q', ư='U', …)
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>  → renderRimeUtf8()          đặt dấu, xuất UTF-8
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>  → isValidSyllable()         cổng kiểm tra chính tả — không hợp lệ thì trả về phím gốc
+<p>Nới bảng vần làm nhiều chuỗi phím trở nên convert được, tức là ăn vào tiếng Anh. Chỉ chạy một
+chiều thì bạn chỉ thấy một nửa hệ quả.</p>
+<h2 id="chuan-bi">Chuẩn bị<a class="headerlink" href="#chuan-bi" title="Permanent link">&para;</a></h2>
+<p>Chỉ cần thư mục <code>build/</code> đã configure (xem <a href="../build-and-test/">Build &amp; test</a>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>cmake<span class="w"> </span>-B<span class="w"> </span>build<span class="w"> </span>.
 </code></pre></div>
-<p>Biểu diễn nội bộ dùng chữ hoa làm ký hiệu cho nguyên âm có dấu phụ, để phần canonicalize làm việc
-trên ASCII một byte: <code>B</code>=â, <code>A</code>=ă, <code>E</code>=ê, <code>O</code>=ô, <code>Q</code>=ơ, <code>U</code>=ư, <code>D</code>=đ.</p>
-<h3 id="vai-iem-ang-chu-y">Vài điểm đáng chú ý<a class="headerlink" href="#vai-iem-ang-chu-y" title="Permanent link">&para;</a></h3>
+<p>Từ điển đã nằm sẵn trong repo ở <code>dict/</code>, <strong>không cần cài gì và không cần mạng</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Nguồn</th>
+<th>Giấy phép</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dict/vietnamese</code> — 6.631 âm tiết</td>
+<td>package <code>hunspell-vi</code> <code>1:24.2.1-1</code></td>
+<td>GPL-2</td>
+</tr>
+<tr>
+<td><code>dict/american-english</code> — 104.334 từ</td>
+<td>package <code>wamerican</code> <code>2020.12.07-2</code></td>
+<td>kiểu BSD</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Vì sao commit từ điển vào repo thay vì tải lúc chạy</p>
+</div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Baseline là bản ghi **từng-từ-một**. Nếu corpus khác nhau giữa các máy thì phiên bản từ
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>điển của người khác sẽ hiện ra như thể là hồi quy do bạn gây ra. Ghim từ điển vào repo loại
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>bỏ hẳn nhóm vấn đề đó, và cho phép chạy offline.
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>Script cố tình **không** tự đoán sang bản ở `/usr/share/dict`: thiếu file là dừng với exit
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>3 kèm thông báo, vì chạy âm thầm trên một corpus khác còn tệ hơn là không chạy.
+</code></pre></div>
+<p>Telebit là MIT còn từ điển tiếng Việt là GPL-2 — hai bộ này chỉ là <strong>dữ liệu kiểm thử</strong>, đọc
+lúc chạy test, không link vào binary và không nằm trong <code>.deb</code>/<code>.rpm</code>. Chi tiết giấy phép và
+cách dựng lại khi nâng phiên bản: <code>dict/README.md</code>.</p>
+<h2 id="quy-trinh">Quy trình<a class="headerlink" href="#quy-trinh" title="Permanent link">&para;</a></h2>
+<h3 id="1-chay-tren-nhanh-sach-truoc">1. Chạy trên nhánh sạch trước<a class="headerlink" href="#1-chay-tren-nhanh-sach-truoc" title="Permanent link">&para;</a></h3>
+<p>Trước khi sửa gì, chạy một lần để chắc chắn baseline khớp với máy bạn:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./scripts/dict-roundtrip/run.sh
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>  So với baseline
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>┌───┬────────────┬──────────┬─────────────┬────────┬───────────────┐
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>│   │ Ngôn ngữ   │ Mới hỏng │ Đổi kết quả │ Đã sửa │ Kết luận      │
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>├───┼────────────┼──────────┼─────────────┼────────┼───────────────┤
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>│ ✔ │ Tiếng Việt │        0 │           0 │      0 │ khớp baseline │
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>│ ✔ │ Tiếng Anh  │        0 │           0 │      0 │ khớp baseline │
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>└───┴────────────┴──────────┴─────────────┴────────┴───────────────┘
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>  ✔ Không có thay đổi nào so với baseline.
+</code></pre></div>
+<p>Vì từ điển nằm trong repo nên bước này gần như luôn sạch. Nếu <strong>chưa sửa gì</strong> mà đã thấy khác
+biệt thì nhánh của bạn đang có thay đổi trong <code>dict/</code> hoặc <code>baseline/</code> — kiểm tra <code>git status</code>
+trước, đừng chạy tiếp.</p>
+<h3 id="2-sua-code-roi-chay-lai">2. Sửa code, rồi chạy lại<a class="headerlink" href="#2-sua-code-roi-chay-lai" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>./scripts/dict-roundtrip/run.sh
+</code></pre></div>
+<p>Script tự build lại core nên không cần <code>cmake --build</code> thủ công.</p>
+<h3 id="3-oc-ket-qua">3. Đọc kết quả<a class="headerlink" href="#3-oc-ket-qua" title="Permanent link">&para;</a></h3>
+<p>Ví dụ thật, khi vần <code>uôm</code> bị xoá và vần <code>uynh</code> bị trả về cách đặt dấu cũ:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>  So với baseline
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>┌───┬────────────┬──────────┬─────────────┬────────┬───────────────┐
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>│   │ Ngôn ngữ   │ Mới hỏng │ Đổi kết quả │ Đã sửa │ Kết luận      │
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>├───┼────────────┼──────────┼─────────────┼────────┼───────────────┤
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>│ ! │ Tiếng Việt │       20 │           0 │      0 │ CÓ HỒI QUY    │
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>│ ✔ │ Tiếng Anh  │        0 │           0 │      0 │ khớp baseline │
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>└───┴────────────┴──────────┴─────────────┴────────┴───────────────┘
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>  ! Tiếng Việt · Mới hỏng (20 từ)
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>┌────────┬──────────────┬───────────────┐
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>│ Từ     │ Gõ bằng phím │ Engine cho ra │
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>├────────┼──────────────┼───────────────┤
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>│ buồm   │ buoomf       │ buoomf        │
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>│ huỳnh  │ huynhf       │ hùynh         │
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>│ nhuộm  │ nhuoomj      │ nhuoomj       │
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>│ quỳnh  │ quynhf       │ qùynh         │
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>└────────┴──────────────┴───────────────┘
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>  ! CÓ HỒI QUY. Hãy sửa, hoặc nếu đây là đánh đổi có chủ ý thì giải thích
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>     trong mô tả PR rồi chạy: ./scripts/dict-roundtrip/run.sh --update-baseline
+</code></pre></div>
+<p>So hai cột cuối là biết ngay hỏng kiểu nào:</p>
+<table>
+<thead>
+<tr>
+<th>Hai cột cuối</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Giống hệt nhau (<code>buoomf</code> → <code>buoomf</code>)</td>
+<td>Engine từ chối convert, trả lại phím thô. Thường là <strong>thiếu vần</strong> trong <code>rime_table.cpp</code>. Người dùng thấy chữ Latin nên nhận ra ngay.</td>
+</tr>
+<tr>
+<td>Khác nhau (<code>huynhf</code> → <code>hùynh</code>)</td>
+<td>Engine có convert nhưng <strong>sai</strong> — đặt dấu nhầm chỗ hoặc dựng nguyên âm sai. Người dùng có thể không nhận ra, nên loại này nguy hiểm hơn.</td>
+</tr>
+</tbody>
+</table>
+<p>Bảng tiếng Anh chỉ có hai cột, vì từ tiếng Anh chính là chuỗi phím. Mỗi nhóm in tối đa 25
+dòng; nếu nhiều hơn, script nói rõ còn bao nhiêu và file nào trong <code>.work/</code> chứa đầy đủ.</p>
+<p>Phía trên hai bảng này còn hai bảng nữa — <strong>Ngữ liệu</strong> (kích thước từng bộ từ điển) và <strong>Kết
+quả thô</strong> (số đạt/lỗi từng phép kiểm). Chỉ dòng <em>hỏng ở CẢ HAI kiểu</em> mới là lỗi thật; hai dòng
+kiểu cũ / kiểu mới lệch nhau chỉ vì từ điển trộn lẫn hai quy ước bỏ dấu.</p>
+<h2 id="ba-nhan-va-cach-xu-ly">Ba nhãn và cách xử lý<a class="headerlink" href="#ba-nhan-va-cach-xu-ly" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Nhãn</th>
+<th>Nghĩa</th>
+<th>Exit</th>
+<th>Bạn phải làm gì</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>!</code></td>
+<td><strong>Mới hỏng</strong></td>
+<td>Giờ hỏng, baseline không có</td>
+<td><strong>1</strong></td>
+<td>Điều tra. Hoặc sửa, hoặc giải thích rõ trong PR vì sao chấp nhận được</td>
+</tr>
+<tr>
+<td><code>!</code></td>
+<td><strong>Đổi kết quả</strong></td>
+<td>Vẫn hỏng ở cả hai bên nhưng ra kết quả khác</td>
+<td><strong>1</strong></td>
+<td>Xem kỹ — hành vi đã đổi dù tổng số không đổi</td>
+</tr>
+<tr>
+<td><code>✔</code></td>
+<td><strong>Đã sửa được</strong></td>
+<td>Baseline có, giờ đã hết hỏng</td>
+<td>0</td>
+<td>Chạy <code>--update-baseline</code> để ghi nhận</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Đổi kết quả</strong> là thứ mà cách đếm số không bao giờ bắt được. Một thay đổi sửa ba âm tiết
+nhưng làm hỏng ba âm tiết khác sẽ giữ nguyên con số tổng — chỉ có so <strong>danh sách từ</strong> mới thấy.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>  ! Tiếng Việt · Đổi kết quả (1 từ)
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>┌───────┬──────────────┬──────────────────────────┐
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>│ Từ    │ Gõ bằng phím │ Engine cho ra            │
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>├───────┼──────────────┼──────────────────────────┤
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>│ boong │ boong        │ bông   (baseline: bôông) │
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>└───────┴──────────────┴──────────────────────────┘
+</code></pre></div>
+<h3 id="khi-moi-hong-la-anh-oi-co-chu-y">Khi <em>Mới hỏng</em> là đánh đổi có chủ ý<a class="headerlink" href="#khi-moi-hong-la-anh-oi-co-chu-y" title="Permanent link">&para;</a></h3>
+<p>Không phải từ <em>Mới hỏng</em> nào cũng là bug. Nếu bạn mở rộng bảng vần để cứu từ tiếng Việt và mất vài từ
+tiếng Anh, đó có thể là đánh đổi đúng. Khi đó trong mô tả PR hãy nêu rõ:</p>
 <ul>
-<li><strong>Phím phụ đặt ở đâu cũng được</strong> — <code>extractTone()</code> gom phím thanh ở mọi vị trí sau nguyên âm
-  đầu, phím cuối cùng thắng. Nhờ đó <code>vieetj</code> và <code>vietj</code> cho cùng kết quả.</li>
-<li><strong><code>gif</code> là ca đặc biệt</strong> — <code>gi</code> cũng là âm đầu hợp lệ, nên parser tổng quát sẽ coi cả <code>gi</code> là
-  âm đầu và mất thanh. Xử lý riêng để ra <code>gì</code>.</li>
-<li><strong>Vần gõ dở vẫn chuyển</strong> — <code>isValidSyllable()</code> dùng tập tiền tố tính trước
-  (<code>getRimeMainVowelPrefixSet()</code>) nên <code>tiee</code> → <code>tiê</code> trên đường tới <code>tiên</code>, không phải chờ gõ xong.</li>
-<li><strong>Cổng chính tả có thể từ chối</strong> — nếu kết quả không phải âm tiết hợp lệ, hàm trả về <strong>nguyên
-  văn phím đã gõ</strong>. Đây là cơ chế đằng sau <a href="../../concepts/spell-check/">Kiểm tra chính tả</a>.</li>
+<li>Cứu được bao nhiêu, mất bao nhiêu (script in sẵn con số)</li>
+<li>Liệt kê các từ <em>Mới hỏng</em> và vì sao chúng chấp nhận được</li>
+<li>Vì sao không có cách nào tránh được</li>
 </ul>
-<h2 id="addon-fcitx5">Addon fcitx5<a class="headerlink" href="#addon-fcitx5" title="Permanent link">&para;</a></h2>
-<p><code>EngineVietCpp</code> giữ buffer phím thô; addon quyết định hiển thị thế nào:</p>
+<p>Đừng im lặng cập nhật baseline rồi coi như không có gì.</p>
+<h2 id="cap-nhat-baseline-va-ua-vao-pr">Cập nhật baseline và đưa vào PR<a class="headerlink" href="#cap-nhat-baseline-va-ua-vao-pr" title="Permanent link">&para;</a></h2>
+<p>Đây là bước <strong>bắt buộc</strong> khi kết quả có thay đổi và bạn đã xác nhận là đúng ý:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./scripts/dict-roundtrip/run.sh<span class="w"> </span>--update-baseline
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>  ✔ Đã chốt baseline mới: 16 âm tiết Việt, 1203 từ Anh
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    Nhớ commit scripts/dict-roundtrip/baseline cùng trong PR.
+</code></pre></div>
+<p>Rồi commit <strong>cùng trong PR đó</strong>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>git<span class="w"> </span>add<span class="w"> </span>scripts/dict-roundtrip/baseline/
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"test: cập nhật baseline từ điển"</span>
+</code></pre></div>
+<div class="admonition danger">
+<p class="admonition-title">Không commit baseline là làm hỏng cổng kiểm tra cho người sau</p>
+</div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Baseline là mốc để so sánh. Nếu bạn sửa code làm thay đổi kết quả mà không cập nhật
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>baseline, mọi người sau bạn đều thấy `FAIL` do thay đổi **của bạn** chứ không phải của họ —
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>và cổng này lập tức mất tác dụng vì ai cũng bỏ qua nó.
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>Ngược lại, nếu bạn chỉ có *Đã sửa được* mà không cập nhật baseline, cổng sẽ tiếp tục bảo vệ trạng
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>thái cũ và tệ hơn, tức là bug bạn vừa sửa có thể quay lại mà không ai biết.
+</code></pre></div>
+<p>Hai file baseline nằm ở <code>scripts/dict-roundtrip/baseline/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vietnamese.tsv</code></td>
+<td>16 dòng — đọc bằng mắt được, mỗi dòng là <code>âm tiết · phím · kết quả</code></td>
+</tr>
+<tr>
+<td><code>english.tsv</code></td>
+<td>1203 dòng — mỗi dòng là <code>từ · kết quả</code></td>
+</tr>
+</tbody>
+</table>
+<p>Diff của hai file này trong PR chính là bằng chứng rõ nhất cho reviewer thấy thay đổi của bạn
+ảnh hưởng tới đâu.</p>
+<div class="admonition tip">
+<p class="admonition-title">Nếu bạn nâng phiên bản từ điển trong <code>dict/</code></p>
+</div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Đổi corpus gần như chắc chắn làm baseline lệch một loạt từ. Khi đó `git add` cả `dict/` lẫn
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>`baseline/`, và **nói rõ trong mô tả PR rằng đây là thay đổi từ điển chứ không phải thay
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>đổi engine** — nếu không reviewer sẽ tưởng bộ gõ vừa hỏng thêm hàng chục từ.
+</code></pre></div>
+<h2 id="checklist-truoc-khi-mo-pr">Checklist trước khi mở PR<a class="headerlink" href="#checklist-truoc-khi-mo-pr" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./build/telebit_telex_tests<span class="w">    </span><span class="c1"># test đơn vị</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>./scripts/dict-roundtrip/run.sh<span class="w">                       </span><span class="c1"># kiểm tra từ điển</span>
+</code></pre></div>
 <ul>
-<li><strong>Preedit</strong> — buffer hiện dưới dạng preedit gạch chân, chốt khi gặp Space/Enter/dấu câu</li>
-<li><strong>Direct commit + rollback</strong> — mỗi phím, addon xoá phần đã gửi rồi gửi lại kết quả mới</li>
+<li>[ ] <code>telebit_telex_tests</code> pass</li>
+<li>[ ] <code>run.sh</code> không còn <em>Mới hỏng</em> / <em>Đổi kết quả</em> nào chưa giải thích được</li>
+<li>[ ] Đã thêm assert vào <code>tests.cpp</code> cho từ mà bạn vừa sửa được — script chỉ chặn hồi quy, còn
+  <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>test đơn vị mới ghi lại **ý định**
+</code></pre></div></li>
+<li>[ ] Đã chạy <code>--update-baseline</code> và commit <code>scripts/dict-roundtrip/baseline/</code> nếu kết quả đổi</li>
+<li>[ ] Mô tả PR nêu rõ đánh đổi, nếu có</li>
 </ul>
-<p>Trạng thái là <strong>theo từng input context</strong> (<code>TelebitInputState</code>), nên mỗi cửa sổ/ô nhập có buffer
-riêng, không lẫn nhau.</p>
-<p>Addon còn giữ: macro (khớp trên phím thô, không phân biệt hoa/thường), danh sách ứng dụng ép dùng
-preedit, cờ tự viết hoa đầu câu, và trạng thái của ô nhập trợ lý AI.</p>
+<h2 id="gioi-han-can-biet">Giới hạn cần biết<a class="headerlink" href="#gioi-han-can-biet" title="Permanent link">&para;</a></h2>
+<p>Script này kiểm <strong>core chuyển đổi</strong> (<code>telex_to_unicode</code>), không kiểm tầng engine hay preedit
+của fcitx5. Lỗi ở <code>engine.cpp</code> hay <code>telebit_fcitx5.cpp</code> — backspace, commit, rollback — nó
+không thấy.</p>
+<p>Nó cũng chỉ dùng <code>hunspell-vi</code> (~6.6k âm tiết đã biên tập) chứ không dùng các wordlist lớn thu
+thập tự động, vì những bộ đó trộn lẫn biến thể phương ngữ, từ láy chép sai và tên riêng nên
+"âm tiết này hỏng" không phân biệt được với "mục này vốn không phải âm tiết tiếng Việt". Chi
+tiết ở <code>scripts/dict-roundtrip/README.md</code>.</p>
+<p>Và vì từ điển được ghim ở một phiên bản cố định, nó chỉ phủ đúng những từ có trong hai file đó
+— từ mới, tên riêng hay cách viết vùng miền nằm ngoài <code>dict/</code> thì nó không biết tới.</p>
+<p>Cuối cùng, <strong>16 lỗi tiếng Việt và 1203 lỗi tiếng Anh trong baseline không phải bug cần sửa</strong> —
+chúng là mơ hồ cố hữu của Telex (<code>xoong</code> đụng <code>xông</code> vì <code>oo</code> là <code>ô</code>; <code>reset</code> → <code>rết</code> vì <code>s</code> là
+phím dấu sắc). Đừng cố kéo chúng về 0.</p>
 <h2 id="lien-quan">Liên quan<a class="headerlink" href="#lien-quan" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../build-and-test/">Build &amp; test</a></li>
-<li><a href="../../concepts/vietnamese-syllable/">Âm tiết tiếng Việt</a> — mô hình ngôn ngữ mà engine dựa vào</li>
+<li><a href="../build-and-test/">Build &amp; test</a> — build core và viết test đơn vị</li>
+<li><a href="../../concepts/spell-check/">Kiểm tra chính tả &amp; escape</a> — cơ chế quyết định một âm tiết có
+được convert hay bị trả về phím thô</li>
+<li><a href="../../concepts/vietnamese-syllable/">Âm tiết tiếng Việt</a> — cấu trúc onset + vần mà bảng vần
+dựa vào</li>
 </ul>
 
 
@@ -1317,7 +1648,7 @@ preedit, cờ tự viết hoa đầu câu, và trạng thái của ô nhập tr�
       <nav class="md-footer__inner md-grid" aria-label="Chân trang" >
         
           
-          <a href="../dictionary-check/" class="md-footer__link md-footer__link--prev" aria-label="Trước: Kiểm tra bằng từ điển">
+          <a href="../build-and-test/" class="md-footer__link md-footer__link--prev" aria-label="Trước: Build &amp; test">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1327,11 +1658,27 @@ preedit, cờ tự viết hoa đầu câu, và trạng thái của ô nhập tr�
                 Trước
               </span>
               <div class="md-ellipsis">
-                Kiểm tra bằng từ điển
+                Build & test
               </div>
             </div>
           </a>
         
+        
+          
+          <a href="../architecture/" class="md-footer__link md-footer__link--next" aria-label="Sau: Kiến trúc">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Sau
+              </span>
+              <div class="md-ellipsis">
+                Kiến trúc
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
         
       </nav>
     

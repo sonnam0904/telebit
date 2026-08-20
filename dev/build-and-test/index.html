@@ -18,7 +18,7 @@
         <link rel="prev" href="../../reference/migrate-from-vnkey/">
       
       
-        <link rel="next" href="../architecture/">
+        <link rel="next" href="../dictionary-check/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -1104,6 +1104,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../dictionary-check/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kiểm tra bằng từ điển
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../architecture/" class="md-nav__link">
         
   
@@ -1389,15 +1410,15 @@ X11: test dựng thẳng <code>SessionInfo{display_server="wayland", compositor=
 <code>pad_to</code> từng thêm 1 space thừa khi chuỗi dài đúng bằng cột, và khoảng trống module từng bị
 đánh dấu <code>LỖI</code> khiến mã thoát báo máy hỏng trong khi mọi ứng dụng vẫn gõ bình thường.</p>
 <p>Kiểm tra test có thật sự bắt lỗi bằng cách cố tình phá lại rồi build:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s|column - width : 0|column - width : 1|&#39;</span><span class="w"> </span>cli/textfmt.cpp<span class="w">   </span><span class="c1"># gây lại bug cũ</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">'s|column - width : 0|column - width : 1|'</span><span class="w"> </span>cli/textfmt.cpp<span class="w">   </span><span class="c1"># gây lại bug cũ</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./build/cli/telebit_doctor_tests<span class="w">             </span><span class="c1"># phải FAIL</span>
 </code></pre></div>
 <h2 id="viet-test">Viết test<a class="headerlink" href="#viet-test" title="Permanent link">&para;</a></h2>
 <p>Test nằm gọn trong <code>tests.cpp</code>, mỗi nhóm là một hàm <code>static void test_*()</code> gọi từ <code>main()</code>.
 Cách kiểm tra là <code>assert</code> trên <code>telex_to_unicode()</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">test_my_feature</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">telex_to_unicode</span><span class="p">(</span><span class="s">&quot;tieengs&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;tiếng&quot;</span><span class="p">);</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">telex_to_unicode</span><span class="p">(</span><span class="s">&quot;cheese&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;cheese&quot;</span><span class="p">);</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">telex_to_unicode</span><span class="p">(</span><span class="s">"tieengs"</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"tiếng"</span><span class="p">);</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">telex_to_unicode</span><span class="p">(</span><span class="s">"cheese"</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"cheese"</span><span class="p">);</span>
 <a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="p">}</span>
 </code></pre></div>
 <p>Thêm hàm mới thì nhớ gọi nó trong <code>main()</code>, nếu không nó không bao giờ chạy.</p>
@@ -1408,6 +1429,9 @@ Cách kiểm tra là <code>assert</code> trên <code>telex_to_unicode()</code>:<
 Khi thêm rule mới, thêm luôn cả ca <strong>không nên</strong> bị chuyển — xem
 <code>test_spell_check_restore()</code> và <code>test_trailing_hat_escape()</code> làm mẫu.</p>
 </div>
+<p><code>tests.cpp</code> chỉ phủ những ca có người nghĩ ra. Trước khi mở PR hãy chạy thêm
+<a href="../dictionary-check/">kiểm tra bằng từ điển</a> — nó chạy cả từ điển tiếng Việt lẫn tiếng Anh qua
+engine và gọi tên từng từ mà thay đổi của bạn làm hỏng hoặc sửa được.</p>
 <h2 id="ci">CI<a class="headerlink" href="#ci" title="Permanent link">&para;</a></h2>
 <p>Workflow <code>.github/workflows/ci.yml</code> chạy trên mọi push và pull request, gồm <strong>hai job</strong>:</p>
 <table>
@@ -1477,6 +1501,7 @@ Chuỗi chốt được ở đây chính là thứ <code>telebit --version</code
 addon, nên hai bên không thể mâu thuẫn.</p>
 <h2 id="lien-quan">Liên quan<a class="headerlink" href="#lien-quan" title="Permanent link">&para;</a></h2>
 <ul>
+<li><a href="../dictionary-check/">Kiểm tra bằng từ điển</a> — bắt buộc chạy trước khi mở PR</li>
 <li><a href="../architecture/">Kiến trúc</a> — luồng chuyển đổi và vai trò từng file</li>
 <li><a href="../../concepts/spell-check/">Kiểm tra chính tả &amp; escape</a> — phần dễ hỏng nhất khi sửa</li>
 </ul>
@@ -1534,13 +1559,13 @@ addon, nên hai bên không thể mâu thuẫn.</p>
         
         
           
-          <a href="../architecture/" class="md-footer__link md-footer__link--next" aria-label="Sau: Kiến trúc">
+          <a href="../dictionary-check/" class="md-footer__link md-footer__link--next" aria-label="Sau: Kiểm tra bằng từ điển">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Sau
               </span>
               <div class="md-ellipsis">
-                Kiến trúc
+                Kiểm tra bằng từ điển
               </div>
             </div>
             <div class="md-footer__button md-icon">
