@@ -79,7 +79,13 @@ Ghi chú: trong thực tế, khi phân tích âm đầu, thường dùng nguyên
 - **ôm – ốp**
 - **ơm – ớp**
 - **um – up**
+- **ưm** (`hừm`, `ừm` — thán từ, ngoài hệ vần chuẩn)
 - **ươm – ướp**
+- **uôm** (`buồm`, `nhuộm`, `luộm thuộm`) — dấu trên `ô`
+- **oam – oap** (`ngoạm`, `soạp`) · **oăm – oăp** (`khoằm`, `oăm`) — dấu trên `a`/`ă`
+- **oem** (`ngoém`, `ngoẻm`) — dấu trên `e`
+- **yêm** (`yếm`, `yểm`) — dấu trên `ê`
+- **uyp** (`tuýp`) — dấu trên `y`
 
 ### Nhóm vần có âm cuối **n / t**
 
@@ -103,7 +109,10 @@ Ghi chú: trong thực tế, khi phân tích âm đầu, thường dùng nguyên
 - **ăng – ăc**
 - **âng – âc**
 - **eng – ec**
+- **êng** (`giếng`, `giêng`, `ễng`) — dấu trên `ê`
 - **iêng – iếc**
+- **yêng** (`yêng`, `yểng`) — dấu trên `ê`
+- **oeng** (`xoẻng`, `loẻng`) — dấu trên `e`
 - **ong – oc**
 - **ông – ôc**
 - **ung – uc**
@@ -117,7 +126,8 @@ Ghi chú: trong thực tế, khi phân tích âm đầu, thường dùng nguyên
 - **ênh – êch**
 - **inh – ich**
 - **oanh – oach**
-- **uynh – uych**
+- **uênh – uêch** (`huênh hoang`, `xuềnh xoàng`, `khuếch đại`, `nguệch ngoạc`) — dấu trên `ê`
+- **uynh – uych** — dấu trên `y` (`huỳnh`, `quỳnh`, `huých`)
 
 ## Nhóm vần nguyên âm ghép
 
@@ -145,13 +155,14 @@ Ghi chú: trong thực tế, khi phân tích âm đầu, thường dùng nguyên
 - **oen – oet**
 - **oang – oac**
 - **uyên – uyết**
-- **uyn – uyt**
+- **uyn – uyt** — dấu trên `y`, như mọi vần `uy` + âm cuối (`quýn`, `quýt`)
 
 ## Nhóm vần ba nguyên âm (mở, không âm cuối)
 
 Các vần gồm ba nguyên âm và không có âm cuối. Dấu thanh đặt trên **nguyên âm giữa** (xem quy tắc bên dưới).
 
 - **oeo** – dấu trên `e` (`ngoèo`, `ngoẻo`)
+- **oao** – dấu trên `a` (`ngoáo`, `khoào`)
 - **uyu** – dấu trên `y` (`khuỷu`)
 - **uây** – dấu trên `â` (`khuây`, `khuẩy`)
 
