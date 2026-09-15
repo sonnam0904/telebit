@@ -57,7 +57,15 @@ const char *const kAiSpinnerFrames[] = {"[>---] ", "[->--] ", "[-->-] ", "[--->]
 constexpr int kAiSpinnerFrameCount = 4;
 // How often the ellipsis advances, in microseconds (~400ms).
 constexpr std::uint64_t kAiSpinnerIntervalUs = 200000;
-việc
+
+// Count UTF-8 characters (codepoints) in a string.
+int utf8CharCount(const std::string &s) {
+    int count = 0;
+    for (std::size_t i = 0; i < s.size(); ++i) {
+        unsigned char c = static_cast<unsigned char>(s[i]);
+        // Leading bytes: 0xxxxxxx, 110xxxxx, 1110xxxx, 11110xxx
+        if ((c & 0x80u) == 0 || (c & 0xC0u) == 0xC0u) {
+            ++count;
         }
     }
     return count;
