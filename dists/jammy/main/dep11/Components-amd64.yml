@@ -145,7 +145,7 @@ Screenshots:
     width: 820
     height: 760
 Releases:
-- version: 2.15.0
+- version: 2.15.1
   type: stable
   unix-timestamp: 1789430400
 ContentRating:

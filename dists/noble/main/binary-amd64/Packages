@@ -1,13 +1,13 @@
 Package: telebit
-Version: 2.15.0+noble
+Version: 2.15.1+noble
 Architecture: all
 Maintainer: telebit-fcitx5 <https://github.com/sonnam0904/telebit>
 Depends: telebit-fcitx5
-Filename: pool/noble/main/t/telebit_2.15.0+noble_all.deb
-Size: 646
-MD5sum: 317898b9482e2f364673d57c237112a8
-SHA1: 011fbca5d6d7e870b3d004eedc2bd1803a82b7bd
-SHA256: 2226d8c4f127f7b3f2987b25dabfa27c1c6ccb87f2086f415eb2318af100ebab
+Filename: pool/noble/main/t/telebit_2.15.1+noble_all.deb
+Size: 644
+MD5sum: 63e12da96bfe4927da02fdedaa19d9a4
+SHA1: eedf86151ae63662dec20c081a76882632c7eedd
+SHA256: 3647ad7f11916f79f659e53a0a4c0ab79b26bef187801b7467925c04530f07e9
 Section: utils
 Priority: optional
 Description: Vietnamese Telex/VNI input method for fcitx5 (metapackage)
@@ -15,17 +15,17 @@ Description: Vietnamese Telex/VNI input method for fcitx5 (metapackage)
  files of its own; it only depends on telebit-fcitx5, the real addon package.
 
 Package: telebit-fcitx5
-Version: 2.15.0+noble
+Version: 2.15.1+noble
 Architecture: amd64
 Maintainer: telebit-fcitx5 <https://github.com/sonnam0904/telebit>
-Installed-Size: 1337
+Installed-Size: 1351
 Depends: fcitx5, libfcitx5core5 | libfcitx5core7 | libfcitx5core8 | libfcitx5core9 | libfcitx5core10, libcurl4 | libcurl4t64, libgtk-4-1 | libgtk-4-1t64
 Recommends: wl-clipboard, xclip, fcitx5-configtool
-Filename: pool/noble/main/t/telebit-fcitx5_2.15.0+noble_amd64.deb
-Size: 495154
-MD5sum: 1d8884d566c739fea5ec0a4b1d69fcf4
-SHA1: a57abb8d98f85abc83355178af72e95dedea9400
-SHA256: 91d4718988e43d81633aa0f3ffe3ba0104cc1345f92581c0b148442a790e4c80
+Filename: pool/noble/main/t/telebit-fcitx5_2.15.1+noble_amd64.deb
+Size: 502782
+MD5sum: 6725cf3f76de0445b701ca22ab57be45
+SHA1: 99b730e80ca03c56bdadd5a29b81227ff297c87c
+SHA256: 1e078179c8636630a67088052b75ddab6166de0579c59faa5317e6a18d58c241
 Section: utils
 Priority: optional
 Description: Vietnamese Telex input method for fcitx5
