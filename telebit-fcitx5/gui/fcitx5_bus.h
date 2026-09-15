@@ -27,14 +27,45 @@ namespace telebit::setup::bus {
 bool running();
 
 // Scalar addon options, as fcitx5 hands them over: leaf values are the strings
-// "True"/"False". Only booleans are exposed here — the key lists and the macro
-// and per-app tables belong in fcitx5-configtool, which configure_addon()
-// opens on exactly the right page.
+// "True"/"False". Only booleans are exposed here — the key lists are still
+// fcitx5-configtool's job, which configure_addon() opens on the right page.
 std::map<std::string, bool> read_bool_options();
 
 // Writes one option. Returns false when the call failed, in which case the UI
 // must put the switch back where it was rather than lie about the state.
 bool write_bool_option(const std::string &key, bool value);
+
+// One row of ForcePreeditApps. `label` is what the addon resolved from the
+// desktop entry and is for display only; `program` is the name an input
+// context is matched against.
+struct AppRule {
+    std::string label;
+    std::string program;
+    bool enabled = false;
+};
+
+// One row of Macros.
+struct Macro {
+    std::string abbrev;
+    std::string expansion;
+};
+
+// Both lists come back in the addon's own order, which for the application
+// list is the order the programs were first focused.
+std::vector<AppRule> read_apps();
+std::vector<Macro> read_macros();
+
+// A list option is REPLACED, not merged: fcitx5's unmarshallOption() for a
+// vector starts with value.clear(), so whatever is sent here becomes the whole
+// list. Both writers therefore take the complete list, and a caller that has
+// only changed one row still has to hand over the rest.
+//
+// The consequence worth knowing: between a read and a write, the addon may
+// have appended a newly-focused application of its own, and this write drops
+// it. fcitx5-configtool has the same race; the window re-reads on every tab
+// switch, which is what keeps the gap small.
+bool write_apps(const std::vector<AppRule> &apps);
+bool write_macros(const std::vector<Macro> &macros);
 
 // Whether telebit-fcitx5 is in the current input-method group — the difference
 // between "installed" and "usable", and the single most common reason someone

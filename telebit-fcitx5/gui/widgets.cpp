@@ -62,6 +62,40 @@ GtkWidget *make_section_title(const std::string &title) {
     return label;
 }
 
+GtkWidget *make_setting_row_labels(const std::string &title, const std::string &note,
+                                   GtkWidget *control, GtkWidget **title_out,
+                                   GtkWidget **note_out) {
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 14);
+    gtk_widget_set_margin_start(box, 16);
+    gtk_widget_set_margin_end(box, 16);
+    gtk_widget_set_margin_top(box, 12);
+    gtk_widget_set_margin_bottom(box, 12);
+
+    GtkWidget *text = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
+    gtk_widget_set_hexpand(text, TRUE);
+
+    GtkWidget *title_label = make_label(title, "tb-label", true);
+    gtk_box_append(GTK_BOX(text), title_label);
+    if (title_out != nullptr) *title_out = title_label;
+
+    if (!note.empty() || note_out != nullptr) {
+        GtkWidget *note_label = make_label(note, "tb-note", true);
+        gtk_box_append(GTK_BOX(text), note_label);
+        if (note_out != nullptr) *note_out = note_label;
+    }
+    gtk_box_append(GTK_BOX(box), text);
+
+    if (control != nullptr) {
+        gtk_widget_set_valign(control, GTK_ALIGN_CENTER);
+        gtk_box_append(GTK_BOX(box), control);
+    }
+    return box;
+}
+
+GtkWidget *make_setting_row(const std::string &title, const std::string &note, GtkWidget *control) {
+    return make_setting_row_labels(title, note, control, nullptr, nullptr);
+}
+
 GtkWidget *make_status_row(Status status, const std::string &label, const std::string &value,
                            const std::string &note, int depth) {
     GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 14);

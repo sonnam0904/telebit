@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "fcitx5_bus.h"
+#include "updates.h"
 #include "widgets.h"
 
 namespace telebit::setup {
@@ -16,6 +17,10 @@ struct OptionRow {
 };
 
 struct SetupPage {
+    // Held for the duration of the version check and of an upgrade, so closing
+    // the window mid-call does not return from g_application_run and run static
+    // destructors while a worker thread is still inside curl.
+    GtkApplication *app = nullptr;
     GtkWidget *root = nullptr;
     GtkWidget *hero = nullptr;
     GtkWidget *badge = nullptr;
@@ -27,9 +32,24 @@ struct SetupPage {
     GtkWidget *vni_radio = nullptr;
     std::vector<OptionRow> options;
 
+    GtkWidget *restart_button = nullptr;
+
+    // The version row: a title that states what is installed, a note that says
+    // what was found upstream, and a button that only appears when there is
+    // something to press.
+    GtkWidget *version_title = nullptr;
+    GtkWidget *version_note = nullptr;
+    GtkWidget *update_button = nullptr;
+    GtkWidget *update_spinner = nullptr;
+    update::Check latest;
+
     // Set while the widgets are being filled in from fcitx5, so the handlers
     // that write back do not fire for values they just read.
     bool loading = false;
+
+    // The window is gone but a worker thread is still on its way back. Same
+    // role as StatusPage::closed.
+    bool closed = false;
 };
 
 namespace {
@@ -49,28 +69,20 @@ void set_hero(SetupPage *page, const char *state, const char *icon_name, const s
     gtk_label_set_text(GTK_LABEL(page->hero_detail), detail.c_str());
 }
 
-// A row of: title, note underneath, and a control on the right.
-GtkWidget *make_setting_row(const std::string &title, const std::string &note, GtkWidget *control) {
-    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 14);
-    gtk_widget_set_margin_start(box, 16);
-    gtk_widget_set_margin_end(box, 16);
-    gtk_widget_set_margin_top(box, 12);
-    gtk_widget_set_margin_bottom(box, 12);
-
-    GtkWidget *text = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-    gtk_widget_set_hexpand(text, TRUE);
-    gtk_box_append(GTK_BOX(text), make_label(title, "tb-label", true));
-    if (!note.empty()) gtk_box_append(GTK_BOX(text), make_label(note, "tb-note", true));
-    gtk_box_append(GTK_BOX(box), text);
-
-    gtk_widget_set_valign(control, GTK_ALIGN_CENTER);
-    gtk_box_append(GTK_BOX(box), control);
-    return box;
-}
-
-void on_option_toggled(GtkSwitch *toggle, gboolean state, gpointer data) {
+// Returns gboolean because GtkSwitch::state-set does. A GtkSwitch carries two
+// properties: `active` is what the user just flipped, `state` is what gets
+// drawn, and the default handler copies the first into the second unless the
+// handler returns TRUE.
+//
+// This was declared void, so the marshaller read an undefined return value.
+// Whenever that read as FALSE on the failure path, the default handler ran
+// after the rollback and painted `state` with the value fcitx5 had just
+// refused — the switch then showed a setting that was never saved.
+gboolean on_option_toggled(GtkSwitch *toggle, gboolean state, gpointer data) {
     auto *page = static_cast<SetupPage *>(data);
-    if (page->loading) return;
+    // FALSE, not TRUE: the rollback below re-enters here with `loading` set, and
+    // that pass needs the default handler to pull `state` back with `active`.
+    if (page->loading) return FALSE;
 
     // Find which option this switch belongs to.
     for (const auto &row : page->options) {
@@ -82,9 +94,12 @@ void on_option_toggled(GtkSwitch *toggle, gboolean state, gpointer data) {
             page->loading = false;
             set_hero(page, "fail", "dialog-error-symbolic", "Không lưu được cấu hình",
                      "fcitx5 không nhận lệnh. Thử khởi động lại fcitx5 rồi mở lại cửa sổ này.");
+            // TRUE so this emission's default handler cannot undo the rollback.
+            return TRUE;
         }
-        return;
+        return FALSE;
     }
+    return FALSE;
 }
 
 void on_layout_toggled(GtkCheckButton *button, gpointer data) {
@@ -126,6 +141,59 @@ void on_configure_clicked(GtkButton *, gpointer data) {
     }
 }
 
+// fcitx5 drops its bus name while it restarts, so everything asked in the next
+// second or so fails. This used to be a second button ("Đọc lại") that the user
+// pressed once they judged it was back — which is a question the window can
+// answer for itself.
+constexpr int kRestartPollMs = 400;
+constexpr int kRestartPollAttempts = 25;  // ~10 seconds
+
+// Restart() replies before fcitx5 has dropped its bus name, so the first sample
+// can catch the process that is on its way out. Reloading from it would read
+// the state of something about to die and then never look again, which is worse
+// than the stale page this whole flow exists to fix. So "back up" is only
+// believed once the name has been seen gone — or once enough time has passed
+// that a restart too quick to sample is the likelier explanation.
+constexpr int kRestartSettleMs = 2000;
+
+struct RestartPoll {
+    SetupPage *page;
+    int attempts = 0;
+    bool seen_down = false;
+};
+
+gboolean poll_restarted(gpointer data) {
+    auto *poll = static_cast<RestartPoll *>(data);
+    SetupPage *page = poll->page;
+    if (page->closed) {
+        delete poll;
+        return G_SOURCE_REMOVE;
+    }
+
+    const bool up = bus::running();
+    if (!up) {
+        poll->seen_down = true;
+    }
+    const bool settled = poll->seen_down || poll->attempts * kRestartPollMs >= kRestartSettleMs;
+
+    if (up && settled) {
+        gtk_widget_set_sensitive(page->restart_button, TRUE);
+        setup_page_reload(page);
+        delete poll;
+        return G_SOURCE_REMOVE;
+    }
+
+    if (++poll->attempts >= kRestartPollAttempts) {
+        gtk_widget_set_sensitive(page->restart_button, TRUE);
+        set_hero(page, "fail", "dialog-error-symbolic", "fcitx5 chưa quay lại",
+                 "Đã đợi 10 giây mà fcitx5 vẫn chưa trả lời. Thử chạy `fcitx5 -r` trong "
+                 "terminal.");
+        delete poll;
+        return G_SOURCE_REMOVE;
+    }
+    return G_SOURCE_CONTINUE;
+}
+
 void on_restart_clicked(GtkButton *, gpointer data) {
     auto *page = static_cast<SetupPage *>(data);
     if (!bus::restart()) {
@@ -133,14 +201,196 @@ void on_restart_clicked(GtkButton *, gpointer data) {
                  "Thử chạy `fcitx5 -r` trong terminal.");
         return;
     }
-    // fcitx5 drops the bus name while it restarts, so anything asked right now
-    // fails; the button below is what the user presses when it is back.
+    gtk_widget_set_sensitive(page->restart_button, FALSE);
     set_hero(page, "busy", icon_or("content-loading-symbolic", "system-search-symbolic"),
-             "Đang khởi động lại fcitx5…", "Bấm “Đọc lại” sau một vài giây.");
+             "Đang khởi động lại fcitx5…", "Cửa sổ sẽ tự đọc lại trạng thái khi fcitx5 quay lại.");
+    g_timeout_add(kRestartPollMs, poll_restarted, new RestartPoll{page, 0});
 }
 
-void on_reload_clicked(GtkButton *, gpointer data) {
-    setup_page_reload(static_cast<SetupPage *>(data));
+// ---------------------------------------------------------------------------
+// Version check
+
+void show_version(SetupPage *page);
+
+struct VersionMessage {
+    SetupPage *page;
+    update::Check result;
+};
+
+gboolean deliver_version(gpointer data) {
+    auto *message = static_cast<VersionMessage *>(data);
+    SetupPage *page = message->page;
+    if (!page->closed) {
+        page->latest = message->result;
+        gtk_spinner_stop(GTK_SPINNER(page->update_spinner));
+        gtk_widget_set_visible(page->update_spinner, FALSE);
+        show_version(page);
+    }
+    delete message;
+    // Balances the hold in start_version_check.
+    g_application_release(G_APPLICATION(page->app));
+    return G_SOURCE_REMOVE;
+}
+
+gpointer run_version_check(gpointer data) {
+    auto *page = static_cast<SetupPage *>(data);
+    g_idle_add(deliver_version, new VersionMessage{page, update::check()});
+    return nullptr;
+}
+
+void start_version_check(SetupPage *page) {
+    gtk_widget_set_visible(page->update_spinner, TRUE);
+    gtk_spinner_start(GTK_SPINNER(page->update_spinner));
+    gtk_widget_set_visible(page->update_button, FALSE);
+    gtk_label_set_text(GTK_LABEL(page->version_note), "Đang hỏi GitHub xem có bản mới…");
+
+    g_application_hold(G_APPLICATION(page->app));
+    // Detached, like the doctor probe: a curl call with a 6-second timeout has
+    // nothing to cancel, and `closed` keeps a late answer from drawing into a
+    // window that is gone.
+    GThread *thread = g_thread_new("telebit-version", run_version_check, page);
+    g_thread_unref(thread);
+}
+
+// ---------------------------------------------------------------------------
+// The upgrade itself
+
+void on_upgrade_finished(GObject *source, GAsyncResult *result, gpointer data) {
+    auto *page = static_cast<SetupPage *>(data);
+
+    GError *error = nullptr;
+    char *output = nullptr;
+    const gboolean ok = g_subprocess_communicate_utf8_finish(G_SUBPROCESS(source), result, &output,
+                                                             nullptr, &error);
+    const gboolean succeeded =
+        ok != 0 && g_subprocess_get_successful(G_SUBPROCESS(source)) != 0;
+    const int status = g_subprocess_get_exit_status(G_SUBPROCESS(source));
+
+    if (!page->closed) {
+        gtk_spinner_stop(GTK_SPINNER(page->update_spinner));
+        gtk_widget_set_visible(page->update_spinner, FALSE);
+        gtk_widget_set_sensitive(page->update_button, TRUE);
+
+        if (succeeded != 0) {
+            gtk_widget_set_visible(page->update_button, FALSE);
+            gtk_label_set_text(GTK_LABEL(page->version_note),
+                               "Đã cập nhật. Bấm “Khởi động lại” bên dưới để fcitx5 nạp bản mới.");
+        } else if (status == 126 || status == 127) {
+            // pkexec's own exit codes: the authorisation dialog was dismissed,
+            // or the user is not allowed to run it at all. Neither is a failed
+            // upgrade, and calling it one would send the user hunting for a
+            // problem that does not exist.
+            gtk_label_set_text(GTK_LABEL(page->version_note),
+                               "Chưa cập nhật — cửa sổ xác thực bị huỷ hoặc bị từ chối.");
+        } else {
+            std::string note = "Cập nhật thất bại. Chạy trong terminal để xem lỗi: sudo " +
+                               page->latest.command;
+            if (error != nullptr && error->message != nullptr) {
+                note += " (" + std::string(error->message) + ")";
+            }
+            gtk_label_set_text(GTK_LABEL(page->version_note), note.c_str());
+        }
+    }
+
+    g_free(output);
+    if (error != nullptr) g_error_free(error);
+    g_object_unref(source);
+    g_application_release(G_APPLICATION(page->app));
+}
+
+void on_update_clicked(GtkButton *, gpointer data) {
+    auto *page = static_cast<SetupPage *>(data);
+    const update::Check &check = page->latest;
+
+    // Nothing a package manager on this machine can do: hand it to the browser
+    // rather than run a command that would report success and change nothing.
+    if (!check.upgradable) {
+        gtk_show_uri(GTK_WINDOW(gtk_widget_get_root(page->update_button)),
+                     update::releases_url(), GDK_CURRENT_TIME);
+        return;
+    }
+
+    const char *manager = check.method == update::Method::Dnf ? "dnf" : "apt-get";
+    const char *verb = check.method == update::Method::Dnf ? "upgrade" : "install";
+    const char *only_upgrade =
+        check.method == update::Method::Dnf ? "telebit-fcitx5" : "--only-upgrade";
+
+    // pkexec rather than a setuid helper or a polkit action of Telebit's own:
+    // the privileged step is "run the distribution's package manager", which
+    // the distribution already has a policy for.
+    const char *argv[] = {"pkexec", manager, verb, "-y", only_upgrade, "telebit-fcitx5", nullptr};
+    // dnf's form has one argument fewer — the package name is already in place.
+    if (check.method == update::Method::Dnf) argv[5] = nullptr;
+
+    GError *error = nullptr;
+    GSubprocess *process = g_subprocess_newv(
+        argv, static_cast<GSubprocessFlags>(G_SUBPROCESS_FLAGS_STDOUT_PIPE |
+                                            G_SUBPROCESS_FLAGS_STDERR_MERGE),
+        &error);
+    if (process == nullptr) {
+        gtk_label_set_text(GTK_LABEL(page->version_note),
+                           error != nullptr && error->message != nullptr
+                               ? error->message
+                               : "Không chạy được pkexec. Cài gói polkit rồi thử lại.");
+        if (error != nullptr) g_error_free(error);
+        return;
+    }
+
+    gtk_widget_set_sensitive(page->update_button, FALSE);
+    gtk_widget_set_visible(page->update_spinner, TRUE);
+    gtk_spinner_start(GTK_SPINNER(page->update_spinner));
+    gtk_label_set_text(GTK_LABEL(page->version_note),
+                       "Đang cập nhật… xác nhận ở cửa sổ xin quyền rồi đợi một lát.");
+
+    g_application_hold(G_APPLICATION(page->app));
+    g_subprocess_communicate_utf8_async(process, nullptr, nullptr, on_upgrade_finished, page);
+}
+
+void show_version(SetupPage *page) {
+    const update::Check &check = page->latest;
+    gtk_label_set_text(GTK_LABEL(page->version_title),
+                       ("Telebit " + update::current_version()).c_str());
+
+    if (check.latest.empty()) {
+        // Offline, rate-limited, or an unreadable answer. None of those is
+        // evidence that this is the newest version, so the row must not say so.
+        gtk_label_set_text(GTK_LABEL(page->version_note),
+                           check.error.empty() ? "Chưa kiểm tra được bản mới."
+                                               : check.error.c_str());
+        gtk_widget_set_visible(page->update_button, FALSE);
+        return;
+    }
+
+    if (!check.newer) {
+        gtk_label_set_text(GTK_LABEL(page->version_note), "Đang dùng bản mới nhất.");
+        gtk_widget_set_visible(page->update_button, FALSE);
+        return;
+    }
+
+    if (check.upgradable) {
+        // Labelled with what the package manager will install, not with what
+        // GitHub announced — the two differ whenever the repo index is behind.
+        const std::string installing = update::version_core(check.candidate);
+        gtk_button_set_label(GTK_BUTTON(page->update_button),
+                             ("Cập nhật lên " + installing).c_str());
+        std::string note = "Sẽ chạy: " + check.command;
+        if (installing != check.latest) {
+            note += ". GitHub đã có " + check.latest +
+                    ", nhưng repo trên máy mới tới " + installing + ".";
+        }
+        gtk_label_set_text(GTK_LABEL(page->version_note), note.c_str());
+    } else {
+        // GitHub has it, this machine's package manager does not — either the
+        // repo index is stale, or Telebit was not installed from a repo at all.
+        // Sending the user to the releases page is the only honest action left.
+        gtk_button_set_label(GTK_BUTTON(page->update_button), ("Xem bản " + check.latest).c_str());
+        gtk_label_set_text(
+            GTK_LABEL(page->version_note),
+            check.method == update::Method::Unknown
+                ? "Bản đang chạy không do apt/dnf quản lý, nên cập nhật theo đúng cách bạn đã cài."
+                : "Repo trên máy chưa thấy bản này. Chạy `sudo apt update` rồi mở lại cửa sổ.");
+    }
+    gtk_widget_set_visible(page->update_button, TRUE);
 }
 
 GtkWidget *build_hero(SetupPage *page) {
@@ -220,36 +470,58 @@ GtkWidget *build_options_card(SetupPage *page) {
     return card;
 }
 
+GtkWidget *build_version_row(SetupPage *page) {
+    GtkWidget *controls = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+
+    page->update_spinner = gtk_spinner_new();
+    gtk_widget_set_valign(page->update_spinner, GTK_ALIGN_CENTER);
+    gtk_widget_set_visible(page->update_spinner, FALSE);
+    gtk_box_append(GTK_BOX(controls), page->update_spinner);
+
+    // Label left empty: it names a version number nobody knows yet, and the
+    // button stays hidden until there is one to name.
+    page->update_button = gtk_button_new_with_label("");
+    gtk_widget_add_css_class(page->update_button, "tb-pill");
+    gtk_widget_add_css_class(page->update_button, "suggested-action");
+    gtk_widget_set_visible(page->update_button, FALSE);
+    g_signal_connect(page->update_button, "clicked", G_CALLBACK(on_update_clicked), page);
+    gtk_box_append(GTK_BOX(controls), page->update_button);
+
+    return make_setting_row_labels("Telebit " + update::current_version(), "", controls,
+                                   &page->version_title, &page->version_note);
+}
+
 GtkWidget *build_advanced_card(SetupPage *page) {
     GtkWidget *card = make_card();
 
     GtkWidget *configure = gtk_button_new_with_label("Mở fcitx5-configtool");
     gtk_widget_add_css_class(configure, "tb-pill");
     g_signal_connect(configure, "clicked", G_CALLBACK(on_configure_clicked), page);
-    card_append(card, make_setting_row("Gõ tắt, danh sách ứng dụng, phím tắt",
-                                       "Những mục còn lại nằm trong trang cấu hình của fcitx5",
+    card_append(card, make_setting_row("Phím tắt bật/tắt tiếng Việt và mở ô AI",
+                                       "Mục duy nhất còn lại trong trang cấu hình của fcitx5",
                                        configure));
 
-    GtkWidget *restart = gtk_button_new_with_label("Khởi động lại");
-    gtk_widget_add_css_class(restart, "tb-pill");
-    g_signal_connect(restart, "clicked", G_CALLBACK(on_restart_clicked), page);
-    card_append(card, make_setting_row("fcitx5",
-                                       "Cần thiết sau khi đổi frontend hoặc cài thêm addon",
-                                       restart));
+    // One row, not two. Restarting and re-reading were always the same
+    // intention: the old "Đọc lại" button existed only because the restart left
+    // the window showing a state it could no longer verify.
+    page->restart_button = gtk_button_new_with_label("Khởi động lại");
+    gtk_widget_add_css_class(page->restart_button, "tb-pill");
+    g_signal_connect(page->restart_button, "clicked", G_CALLBACK(on_restart_clicked), page);
+    card_append(card,
+                make_setting_row("Khởi động lại fcitx5",
+                                 "Cần sau khi đổi frontend hoặc cài thêm addon. Xong sẽ tự đọc "
+                                 "lại trạng thái.",
+                                 page->restart_button));
 
-    GtkWidget *reload = gtk_button_new_with_label("Đọc lại");
-    gtk_widget_add_css_class(reload, "tb-pill");
-    g_signal_connect(reload, "clicked", G_CALLBACK(on_reload_clicked), page);
-    card_append(card, make_setting_row("Trạng thái cài đặt",
-                                       "Đọc lại từ fcitx5 nếu bạn vừa đổi ở nơi khác", reload));
-
+    card_append(card, build_version_row(page));
     return card;
 }
 
 }  // namespace
 
-SetupPage *setup_page_new() {
+SetupPage *setup_page_new(GtkApplication *app) {
     auto *page = new SetupPage();
+    page->app = app;
 
     page->root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_box_append(GTK_BOX(page->root), build_hero(page));
@@ -264,10 +536,16 @@ SetupPage *setup_page_new() {
     gtk_box_append(GTK_BOX(page->root), build_advanced_card(page));
 
     setup_page_reload(page);
+    // Started once per window, not per tab switch: the user asked for a check
+    // "each time this window opens", and GitHub rate-limits unauthenticated
+    // callers to 60 requests an hour per address.
+    start_version_check(page);
     return page;
 }
 
 GtkWidget *setup_page_widget(SetupPage *page) { return page->root; }
+
+void setup_page_closed(SetupPage *page) { page->closed = true; }
 
 void setup_page_reload(SetupPage *page) {
     const bool running = bus::running();

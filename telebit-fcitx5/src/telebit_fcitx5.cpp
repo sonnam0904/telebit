@@ -5,6 +5,7 @@
 
 #include "telebit_fcitx5.h"
 #include "ai_client.h"
+#include "app_identity.h"
 #include "vietnamese.h"
 
 #include <cctype>
@@ -56,15 +57,7 @@ const char *const kAiSpinnerFrames[] = {"[>---] ", "[->--] ", "[-->-] ", "[--->]
 constexpr int kAiSpinnerFrameCount = 4;
 // How often the ellipsis advances, in microseconds (~400ms).
 constexpr std::uint64_t kAiSpinnerIntervalUs = 200000;
-
-// Count UTF-8 characters (codepoints) in a string.
-int utf8CharCount(const std::string &s) {
-    int count = 0;
-    for (std::size_t i = 0; i < s.size(); ++i) {
-        unsigned char c = static_cast<unsigned char>(s[i]);
-        // Leading bytes: 0xxxxxxx, 110xxxxx, 1110xxxx, 11110xxx
-        if ((c & 0x80u) == 0 || (c & 0xC0u) == 0xC0u) {
-            ++count;
+việc
         }
     }
     return count;
@@ -91,23 +84,6 @@ std::string toLowerAscii(std::string s) {
         }
     }
     return s;
-}
-
-// Programs that need preedit mode instead of direct commit: their text fields
-// report SurroundingText support but handle deleteSurroundingText unreliably, so
-// rewriting a word in place corrupts it. Browsers are the main offenders (both
-// Gecko and Blink), hence firefox + the Chrome/Chromium family — the exact name
-// fcitx reports varies by frontend ("chrome" via the GTK/Wayland module,
-// "google-chrome" from WM_CLASS under X11), so all variants are listed.
-//
-// Used for BOTH paths: the fresh-install default in the header, and
-// recordSeenProgram() below, which is what an existing config file goes
-// through — there the entry is created (enabled) the first time the program is
-// focused. Once the entry exists the user's own choice wins forever after.
-bool isDefaultPreeditProgram(const std::string &programLower) {
-    static const std::unordered_set<std::string> kPrograms{
-        "firefox", "chrome", "google-chrome", "chromium"};
-    return kPrograms.count(programLower) != 0;
 }
 
 // Auto-capitalize: a sentence-ending mark that should trigger capitalizing
@@ -273,29 +249,55 @@ TelebitFcitx5Engine::~TelebitFcitx5Engine() {
     saveConfigIfDirty();
 }
 
-void TelebitFcitx5Engine::normalizeForcePreeditApps() {
+bool TelebitFcitx5Engine::normalizeForcePreeditApps() {
     auto *list = config_.forcePreeditApps.mutableValue();
     if (!list) {
-        return;
+        return false;
     }
 
     std::unordered_set<std::string> seen;
     std::vector<fcitx::TelebitForcePreeditAppConfig> out;
     out.reserve(list->size());
+    bool changed = false;
+
+    // Resolved once for the whole pass, and only if some row actually needs a
+    // label: a config whose rows are all labelled must not pay for a scan of
+    // every desktop entry on the machine each time the user presses Apply.
+    std::vector<std::string> appDirs;
+    bool appDirsLoaded = false;
 
     for (auto &rule : *list) {
         std::string program = toLowerAscii(rule.program.value());
         if (program.empty()) {
+            changed = true;
             continue;
         }
         if (!seen.insert(program).second) {
+            changed = true;
             continue;
         }
+        if (program != rule.program.value()) {
+            changed = true;
+        }
         *rule.program.mutableValue() = program;
+
+        // Rows written before Label existed — every config file on every machine
+        // that already runs Telebit — arrive with an empty one, as do rows the
+        // user adds by hand in the configtool. Left empty the list would show a
+        // blank title, which is worse than the raw program name this replaces.
+        if (rule.label.value().empty()) {
+            if (!appDirsLoaded) {
+                appDirs = telebit::desktopEntryDirs();
+                appDirsLoaded = true;
+            }
+            *rule.label.mutableValue() = telebit::displayLabelFor(program, appDirs);
+            changed = true;
+        }
         out.push_back(std::move(rule));
     }
 
     *list = std::move(out);
+    return changed;
 }
 
 void TelebitFcitx5Engine::rebuildMacroIndex() {
@@ -346,10 +348,15 @@ void TelebitFcitx5Engine::recordSeenProgram(const std::string &program) {
 
     // Auto-discovered apps are unchecked by default, except the known
     // preedit-only programs (browsers), which must be on from the first focus.
-    const bool enabled = isDefaultPreeditProgram(programLower);
+    const bool enabled = telebit::isDefaultPreeditProgram(programLower);
 
     fcitx::TelebitForcePreeditAppConfig app;
     *app.program.mutableValue() = programLower;
+    // Resolved here rather than left to normalizeForcePreeditApps() so the row
+    // is already readable in a configtool that is open right now — the scan runs
+    // once per never-before-seen application, which is as rare as this path.
+    *app.label.mutableValue() =
+        telebit::displayLabelFor(programLower, telebit::desktopEntryDirs());
     *app.enabled.mutableValue() = enabled;
     list->push_back(std::move(app));
 
@@ -402,10 +409,14 @@ void TelebitFcitx5Engine::resetAllInputStates() {
 
 void TelebitFcitx5Engine::reloadConfig() {
     readAsIni(config_, configFile);
-    normalizeForcePreeditApps();
+    // Labels backfilled (and duplicates dropped) above exist only in memory
+    // until they are written back. Persisting them here is what keeps the
+    // desktop-entry scan a one-off instead of something every session repeats,
+    // and what lets a configtool started later read the same names.
+    configDirty_ = normalizeForcePreeditApps();
     rebuildSeenProgramsIndex();
     rebuildMacroIndex();
-    configDirty_ = false;
+    saveConfigIfDirty();
     resetAllInputStates();
 }
 

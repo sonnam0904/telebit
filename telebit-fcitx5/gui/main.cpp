@@ -25,6 +25,8 @@
 
 #include <string>
 
+#include "apps_page.h"
+#include "macros_page.h"
 #include "setup_page.h"
 #include "status_page.h"
 #include "widgets.h"
@@ -35,6 +37,8 @@
 
 namespace {
 
+using telebit::setup::AppsPage;
+using telebit::setup::MacrosPage;
 using telebit::setup::SetupPage;
 using telebit::setup::StatusPage;
 
@@ -90,6 +94,7 @@ const char *const kStyle = R"CSS(
 
 .tb-footer { font-size: 0.85em; opacity: 0.45; }
 .tb-pill { border-radius: 99px; padding-left: 16px; padding-right: 16px; }
+.tb-error { font-size: 0.90em; color: #c01c28; }
 )CSS";
 
 struct Ui {
@@ -97,8 +102,12 @@ struct Ui {
     GtkWidget *window = nullptr;
     GtkWidget *stack = nullptr;
     GtkWidget *setup_scroller = nullptr;
+    GtkWidget *macros_scroller = nullptr;
+    GtkWidget *apps_scroller = nullptr;
     GtkWidget *status_scroller = nullptr;
     SetupPage *setup = nullptr;
+    MacrosPage *macros = nullptr;
+    AppsPage *apps = nullptr;
     StatusPage *status = nullptr;
 };
 
@@ -108,7 +117,8 @@ struct Ui {
 // the first layout.
 gboolean scroll_pages_to_top(gpointer data) {
     auto *ui = static_cast<Ui *>(data);
-    for (GtkWidget *scroller : {ui->setup_scroller, ui->status_scroller}) {
+    for (GtkWidget *scroller :
+         {ui->setup_scroller, ui->macros_scroller, ui->apps_scroller, ui->status_scroller}) {
         if (scroller == nullptr) continue;
         gtk_adjustment_set_value(
             gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(scroller)), 0.0);
@@ -153,31 +163,43 @@ GtkWidget *wrap_in_scroller(GtkWidget *content) {
     return scroller;
 }
 
-// fcitx5-configtool can change the same settings behind this window's back, so
-// the setup page re-reads them every time it comes back into view.
+// Two things change these settings behind this window's back: fcitx5-configtool,
+// and the addon itself, which appends to the application list every time it sees
+// a program it has not seen before. So each editable page re-reads when it comes
+// back into view rather than trusting what it drew on startup.
 void on_visible_page_changed(GObject *, GParamSpec *, gpointer data) {
     auto *ui = static_cast<Ui *>(data);
     const char *name = gtk_stack_get_visible_child_name(GTK_STACK(ui->stack));
     if (g_strcmp0(name, "setup") == 0) telebit::setup::setup_page_reload(ui->setup);
+    else if (g_strcmp0(name, "macros") == 0) telebit::setup::macros_page_reload(ui->macros);
+    else if (g_strcmp0(name, "apps") == 0) telebit::setup::apps_page_reload(ui->apps);
 }
 
 void on_window_destroy(GtkWidget *, gpointer data) {
-    telebit::setup::status_page_closed(static_cast<Ui *>(data)->status);
+    auto *ui = static_cast<Ui *>(data);
+    telebit::setup::status_page_closed(ui->status);
+    telebit::setup::setup_page_closed(ui->setup);
 }
 
 void on_activate(GtkApplication *app, gpointer data) {
     auto *ui = static_cast<Ui *>(data);
     load_style();
 
-    ui->setup = telebit::setup::setup_page_new();
+    ui->setup = telebit::setup::setup_page_new(app);
+    ui->macros = telebit::setup::macros_page_new();
+    ui->apps = telebit::setup::apps_page_new();
     ui->status = telebit::setup::status_page_new(app);
 
     ui->setup_scroller = wrap_in_scroller(telebit::setup::setup_page_widget(ui->setup));
+    ui->macros_scroller = wrap_in_scroller(telebit::setup::macros_page_widget(ui->macros));
+    ui->apps_scroller = wrap_in_scroller(telebit::setup::apps_page_widget(ui->apps));
     ui->status_scroller = wrap_in_scroller(telebit::setup::status_page_widget(ui->status));
 
     ui->stack = gtk_stack_new();
     gtk_stack_set_transition_type(GTK_STACK(ui->stack), GTK_STACK_TRANSITION_TYPE_CROSSFADE);
     gtk_stack_add_titled(GTK_STACK(ui->stack), ui->setup_scroller, "setup", "Cài đặt");
+    gtk_stack_add_titled(GTK_STACK(ui->stack), ui->macros_scroller, "macros", "Gõ tắt");
+    gtk_stack_add_titled(GTK_STACK(ui->stack), ui->apps_scroller, "apps", "Ứng dụng");
     gtk_stack_add_titled(GTK_STACK(ui->stack), ui->status_scroller, "status", "Trạng thái");
     // Set explicitly rather than relying on "the first child added wins": the
     // status page fills itself in from a worker thread after the window is up,

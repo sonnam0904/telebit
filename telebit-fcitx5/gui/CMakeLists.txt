@@ -4,12 +4,18 @@
 add_executable(telebit_setup
     main.cpp
     setup_page.cpp
+    macros_page.cpp
+    apps_page.cpp
     status_page.cpp
     widgets.cpp
     fcitx5_bus.cpp
+    updates.cpp
 )
 set_target_properties(telebit_setup PROPERTIES OUTPUT_NAME "telebit-setup")
-target_link_libraries(telebit_setup PRIVATE telebit_doctor_core PkgConfig::GTK4)
+# libcurl for the release check on GitHub. No packaging work: the addon in the
+# same binary package already pulls libcurl in, and dpkg-shlibdeps derives the
+# dependency from the ELF rather than from this list.
+target_link_libraries(telebit_setup PRIVATE telebit_doctor_core PkgConfig::GTK4 CURL::libcurl)
 
 # Shown in the corner of the window; same string as `telebit --version` and the
 # addon's Version field.
@@ -27,6 +33,14 @@ target_compile_definitions(telebit_setup PRIVATE
     GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_72
     GLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_72)
 target_compile_options(telebit_setup PRIVATE -Werror=deprecated-declarations)
+
+# The release check's two decidable halves: version ordering and reading the tag
+# out of GitHub's answer. check() itself is not covered — it reaches the network
+# and the package databases, so its result describes the machine, not the code.
+add_executable(telebit_updates_tests updates_tests.cpp updates.cpp)
+target_link_libraries(telebit_updates_tests PRIVATE PkgConfig::GTK4 CURL::libcurl)
+target_compile_definitions(telebit_updates_tests PRIVATE TELEBIT_VERSION="${_telebit_pkg_ver}")
+add_test(NAME updates COMMAND telebit_updates_tests)
 
 include(GNUInstallDirs)
 install(TARGETS telebit_setup RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")

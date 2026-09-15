@@ -58,6 +58,78 @@ GVariant *call(const char *method, GVariant *args, std::string *error_out) {
     return reply;
 }
 
+// The whole addon configuration as fcitx5 serialises it: a{sv} whose leaves are
+// strings and whose list options are themselves a{sv}, keyed "0", "1", …
+// Caller owns the reference. nullptr when fcitx5 did not answer.
+GVariant *read_config_dict() {
+    GVariant *reply = call("GetConfig", g_variant_new("(s)", kConfigUri), nullptr);
+    if (reply == nullptr) return nullptr;
+    GVariant *boxed = nullptr;
+    g_variant_get_child(reply, 0, "v", &boxed);
+    g_variant_unref(reply);
+    return boxed;
+}
+
+std::string dict_string(GVariant *dict, const char *key) {
+    if (dict == nullptr) return {};
+    GVariant *value = g_variant_lookup_value(dict, key, G_VARIANT_TYPE_STRING);
+    if (value == nullptr) return {};
+    std::string out = g_variant_get_string(value, nullptr);
+    g_variant_unref(value);
+    return out;
+}
+
+// Rows of one list option, in index order.
+//
+// Looked up by index rather than iterated, because a dictionary carries no
+// order of its own and sorting its keys as text puts "10" before "2" — which
+// silently reorders the list on the first machine with ten applications in it.
+std::vector<GVariant *> read_rows(GVariant *config, const char *option) {
+    std::vector<GVariant *> rows;
+    if (config == nullptr) return rows;
+
+    GVariant *list = g_variant_lookup_value(config, option, G_VARIANT_TYPE_VARDICT);
+    if (list == nullptr) return rows;
+
+    for (int i = 0;; ++i) {
+        GVariant *row =
+            g_variant_lookup_value(list, std::to_string(i).c_str(), G_VARIANT_TYPE_VARDICT);
+        if (row == nullptr) break;
+        rows.push_back(row);
+    }
+    g_variant_unref(list);
+    return rows;
+}
+
+// Sends one list option back as a{sv} keyed "0", "1", … — the same shape
+// GetConfig produced. Everything not named here is left alone by the addon,
+// which loads with partial=true.
+bool write_rows(const char *option,
+                const std::vector<std::vector<std::pair<std::string, std::string>>> &rows) {
+    GVariantBuilder list;
+    g_variant_builder_init(&list, G_VARIANT_TYPE("a{sv}"));
+    for (std::size_t i = 0; i < rows.size(); ++i) {
+        GVariantBuilder row;
+        g_variant_builder_init(&row, G_VARIANT_TYPE("a{sv}"));
+        for (const auto &field : rows[i]) {
+            g_variant_builder_add(&row, "{sv}", field.first.c_str(),
+                                  g_variant_new_string(field.second.c_str()));
+        }
+        g_variant_builder_add(&list, "{sv}", std::to_string(i).c_str(),
+                              g_variant_builder_end(&row));
+    }
+
+    GVariantBuilder top;
+    g_variant_builder_init(&top, G_VARIANT_TYPE("a{sv}"));
+    g_variant_builder_add(&top, "{sv}", option, g_variant_builder_end(&list));
+
+    GVariant *args = g_variant_new("(sv)", kConfigUri, g_variant_builder_end(&top));
+    GVariant *reply = call("SetConfig", args, nullptr);
+    if (reply == nullptr) return false;
+    g_variant_unref(reply);
+    return true;
+}
+
 std::string current_group() {
     GVariant *reply = call("CurrentInputMethodGroup", nullptr, nullptr);
     if (reply == nullptr) return {};
@@ -121,6 +193,67 @@ bool write_bool_option(const std::string &key, bool value) {
     if (reply == nullptr) return false;
     g_variant_unref(reply);
     return true;
+}
+
+std::vector<AppRule> read_apps() {
+    std::vector<AppRule> apps;
+    GVariant *config = read_config_dict();
+    if (config == nullptr) return apps;
+
+    for (GVariant *row : read_rows(config, "ForcePreeditApps")) {
+        AppRule app;
+        app.label = dict_string(row, "Label");
+        app.program = dict_string(row, "Program");
+        app.enabled = dict_string(row, "Enabled") == "True";
+        // A row with no program matches nothing and cannot be made to match
+        // anything from this window, so it is not shown as if it could.
+        if (!app.program.empty()) {
+            // Pre-Label configurations exist on every machine that ran an older
+            // Telebit; the addon backfills them on load, but a window that
+            // opened first would otherwise draw a list of blank titles.
+            if (app.label.empty()) app.label = app.program;
+            apps.push_back(std::move(app));
+        }
+        g_variant_unref(row);
+    }
+    g_variant_unref(config);
+    return apps;
+}
+
+std::vector<Macro> read_macros() {
+    std::vector<Macro> macros;
+    GVariant *config = read_config_dict();
+    if (config == nullptr) return macros;
+
+    for (GVariant *row : read_rows(config, "Macros")) {
+        Macro macro;
+        macro.abbrev = dict_string(row, "Abbrev");
+        macro.expansion = dict_string(row, "Expansion");
+        macros.push_back(std::move(macro));
+        g_variant_unref(row);
+    }
+    g_variant_unref(config);
+    return macros;
+}
+
+bool write_apps(const std::vector<AppRule> &apps) {
+    std::vector<std::vector<std::pair<std::string, std::string>>> rows;
+    rows.reserve(apps.size());
+    for (const auto &app : apps) {
+        rows.push_back({{"Label", app.label},
+                        {"Program", app.program},
+                        {"Enabled", app.enabled ? "True" : "False"}});
+    }
+    return write_rows("ForcePreeditApps", rows);
+}
+
+bool write_macros(const std::vector<Macro> &macros) {
+    std::vector<std::vector<std::pair<std::string, std::string>>> rows;
+    rows.reserve(macros.size());
+    for (const auto &macro : macros) {
+        rows.push_back({{"Abbrev", macro.abbrev}, {"Expansion", macro.expansion}});
+    }
+    return write_rows("Macros", rows);
 }
 
 bool input_method_enabled() {

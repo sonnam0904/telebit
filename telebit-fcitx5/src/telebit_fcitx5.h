@@ -29,6 +29,20 @@ namespace fcitx {
 
 FCITX_CONFIGURATION(
     TelebitForcePreeditAppConfig,
+    // What the list shows as this row's title, because Program alone is
+    // unreadable for a whole class of applications: a PWA window is named after
+    // its install id (ffpwa-01arz3ndektsv4rrffq69g5fav), so a user looking for
+    // Zalo in the list could not tell which row — if any — was Zalo.
+    //
+    // Filled in from the matching desktop entry, and only when empty, so a name
+    // the user corrects by hand survives every reload. Never used for matching:
+    // Program remains the only key an input context is tested against.
+    fcitx::Option<std::string> label{
+        this,
+        "Label",
+        "Tên hiển thị (tự điền từ desktop entry; sửa được, không ảnh hưởng nhận diện)",
+        ""
+    };
     fcitx::Option<std::string> program{
         this,
         "Program",
@@ -236,7 +250,11 @@ private:
                 "Danh sách ứng dụng sử dụng telebit",
                 // Chỉ áp dụng khi chưa có file config. Máy đã có config sẽ được
                 // bật khi ứng dụng được focus lần đầu — xem
-                // defaultPreeditPrograms() trong .cpp.
+                // isDefaultPreeditProgram() trong app_identity.cpp.
+                //
+                // Label để trống có chủ ý: normalizeForcePreeditApps() sẽ điền
+                // tên thật từ desktop entry ("Firefox" thay vì "firefox"), và
+                // hard-code ở đây sẽ chặn mất bước đó.
                 [] {
                     std::vector<fcitx::TelebitForcePreeditAppConfig> apps;
                     for (const char *program :
@@ -250,7 +268,7 @@ private:
                 }(),
                 fcitx::NoConstrain<std::vector<fcitx::TelebitForcePreeditAppConfig>>(),
                 fcitx::DefaultMarshaller<std::vector<fcitx::TelebitForcePreeditAppConfig>>(),
-                fcitx::ListDisplayOptionAnnotation("Program")
+                fcitx::ListDisplayOptionAnnotation("Label")
             };
     );
 
@@ -291,7 +309,10 @@ private:
     void resetAllInputStates();
     void rebuildSeenProgramsIndex();
     void rebuildMacroIndex();
-    void normalizeForcePreeditApps();
+    /// Lower-cases and de-duplicates the rules, and fills in any missing display
+    /// label. Returns true when it changed something, i.e. when the file on disk
+    /// no longer matches what is in memory.
+    bool normalizeForcePreeditApps();
     void recordSeenProgram(const std::string &program);
     void saveConfigIfDirty();
 

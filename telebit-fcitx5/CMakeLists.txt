@@ -9,6 +9,11 @@ endif()
 
 find_package(Fcitx5Core REQUIRED)
 
+# Declared here rather than in src/, because the imported CURL::libcurl target
+# is scoped to the directory that found it and there are two consumers now: the
+# addon's AI client, and the release check in telebit-setup.
+find_package(CURL REQUIRED)
+
 include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
 
 # One version for every artifact, resolved BEFORE add_subdirectory(src) because

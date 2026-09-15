@@ -1,4 +1,20 @@
-find_package(CURL REQUIRED)
+# Deciding which application gets preedit mode, and what to call it in the
+# configtool, are pure functions of a program name and a set of directories.
+# Kept in their own library — and free of Fcitx5::Core — so the tests below can
+# ask them directly: the addon itself cannot be linked into a test binary
+# without a live fcitx instance to attach to.
+add_library(telebit_app_identity STATIC app_identity.cpp)
+target_compile_features(telebit_app_identity PUBLIC cxx_std_17)
+target_include_directories(telebit_app_identity PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+# It is linked into a shared object, so its objects have to be relocatable.
+set_target_properties(telebit_app_identity PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+add_executable(telebit_app_identity_tests app_identity_tests.cpp)
+target_link_libraries(telebit_app_identity_tests PRIVATE telebit_app_identity)
+
+# No install() rule on purpose — same reason as the doctor suite: this is for
+# ctest and install.sh, not for the user's /usr/bin.
+add_test(NAME app_identity COMMAND telebit_app_identity_tests)
 
 add_library(telebit_fcitx5 SHARED
     telebit_fcitx5.cpp
@@ -14,7 +30,7 @@ target_include_directories(telebit_fcitx5 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../..
 )
 
-target_link_libraries(telebit_fcitx5 PRIVATE Fcitx5::Core CURL::libcurl)
+target_link_libraries(telebit_fcitx5 PRIVATE Fcitx5::Core CURL::libcurl telebit_app_identity)
 
 # Produce telebit-fcitx5.so instead of libtelebit_fcitx5.so
 set_target_properties(telebit_fcitx5 PROPERTIES

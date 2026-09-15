@@ -34,6 +34,21 @@ GtkWidget *make_card();
 // Vietnamese ("Phiên làm việc").
 GtkWidget *make_section_title(const std::string &title);
 
+// A row of: bold title, optional note underneath, and a control on the right
+// (a switch, a button, a pair of entries). Every editable row in the window is
+// built from this, which is what keeps the setup, macro and application pages
+// looking like one window rather than three.
+GtkWidget *make_setting_row(const std::string &title, const std::string &note, GtkWidget *control);
+
+// The same row, handing back its two labels so a caller can rewrite them in
+// place when an answer arrives later — rebuilding the card instead would move
+// the controls out from under the pointer. Either out-parameter may be null;
+// asking for `note_out` always creates the note label, even when it starts
+// empty, because there has to be something to write into.
+GtkWidget *make_setting_row_labels(const std::string &title, const std::string &note,
+                                   GtkWidget *control, GtkWidget **title_out,
+                                   GtkWidget **note_out);
+
 // A row of: status icon, bold title, optional value, optional note.
 // `depth` indents children under their parent (an app under its runtime).
 GtkWidget *make_status_row(telebit::doctor::Status status, const std::string &label,

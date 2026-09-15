@@ -159,8 +159,16 @@ void on_refresh(GtkButton *, gpointer data) {
 
 // Toggling depth re-runs immediately: a switch that changes nothing until a
 // second button is pressed reads as broken.
-void on_deep_toggled(GtkSwitch *, gboolean, gpointer data) {
+//
+// gboolean, not void: GtkSwitch::state-set is declared to return one, and a
+// void handler leaves the marshaller reading whatever happens to be in the
+// return register. There is no rollback here for a garbage TRUE to break, but
+// it would still suppress the default handler at random and leave the switch
+// drawn in the position the user did not choose. FALSE lets `state` follow
+// `active`, which is all this switch needs.
+gboolean on_deep_toggled(GtkSwitch *, gboolean, gpointer data) {
     status_page_refresh(static_cast<StatusPage *>(data));
+    return FALSE;
 }
 
 void on_copy(GtkButton *button, gpointer data) {
