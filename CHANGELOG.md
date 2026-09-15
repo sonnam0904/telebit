@@ -1,3 +1,15 @@
+# [2.15.0](https://github.com/sonnam0904/telebit/compare/v2.14.0...v2.15.0) (2026-09-15)
+
+
+### Bug Fixes
+
+* **utf8:** recover my function ([0c55ad1](https://github.com/sonnam0904/telebit/commit/0c55ad115595ccf74c412204a378aff2efb18d54))
+
+
+### Features
+
+* **gui:** add apps and macros management pages ([2c2b747](https://github.com/sonnam0904/telebit/commit/2c2b7478e9b0d8cb6c3e544df3a5c2a63334edb6))
+
 # [2.14.0](https://github.com/sonnam0904/telebit/compare/v2.13.0...v2.14.0) (2026-09-09)
 
 
