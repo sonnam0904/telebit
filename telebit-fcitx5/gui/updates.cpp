@@ -121,31 +121,28 @@ std::string apt_candidate(std::string *installed_out) {
     return candidate;
 }
 
-void detect_method(Check &check) {
+// Fills in everything the machine can answer without a network: which package
+// manager owns Telebit, what it has installed, and what it could install.
+//
+// Runs BEFORE the release check, because the comparison that decides whether an
+// update exists has to be made against the installed version, not against the
+// one compiled into this process.
+void detect_install(Check &check) {
     // dpkg first: a Debian machine with both dpkg and rpm installed is still a
     // Debian machine, and asking rpm about a .deb-installed package would
     // answer "not installed" rather than "wrong tool".
-    if (!run_capture({"dpkg-query", "-W", "-f=${Version}", kPackage}).empty()) {
+    const std::string deb = run_capture({"dpkg-query", "-W", "-f=${Version}", kPackage});
+    if (!deb.empty()) {
         check.method = Method::Apt;
+        check.installed = version_core(trim(deb));
         check.candidate = apt_candidate(nullptr);
-        // Compared against the running binary, not against what dpkg believes
-        // is installed: a from-source install over a packaged one leaves dpkg
-        // describing a version that has not been on disk for months, and
-        // offering to "upgrade" to something older than what is running would
-        // be a downgrade wearing the wrong label.
-        check.upgradable = !check.candidate.empty() &&
-                           is_newer(check.candidate, current_version());
         check.command = std::string("apt-get install --only-upgrade ") + kPackage;
         return;
     }
-    if (!run_capture({"rpm", "-q", kPackage}).empty()) {
+    const std::string rpm = run_capture({"rpm", "-q", "--qf", "%{VERSION}", kPackage});
+    if (!rpm.empty()) {
         check.method = Method::Dnf;
-        // dnf has no cheap offline equivalent of apt-cache policy, and
-        // `dnf check-update` hits the network on its own — which this window
-        // has already done once. So the repository's own idea of a candidate is
-        // unknown here, and GitHub's release stands in for it.
-        check.candidate = check.latest;
-        check.upgradable = check.newer;
+        check.installed = version_core(trim(rpm));
         check.command = std::string("dnf upgrade ") + kPackage;
         return;
     }
@@ -167,6 +164,16 @@ std::string version_core(const std::string &version) {
 }
 
 std::string current_version() { return version_core(TELEBIT_VERSION); }
+
+std::string installed_version() {
+    Check probe;
+    detect_install(probe);
+    return probe.installed;
+}
+
+std::string effective_version(const Check &check) {
+    return check.installed.empty() ? current_version() : check.installed;
+}
 
 bool is_newer(const std::string &candidate, const std::string &current) {
     const std::vector<int> a = version_parts(candidate);
@@ -203,6 +210,14 @@ const char *releases_url() { return kReleasesPage; }
 
 Check check() {
     Check result;
+    detect_install(result);
+
+    // The upgrade replaced the binary under a window that keeps running the old
+    // inode, so this is the normal state immediately after pressing the update
+    // button — and the reason the version row must not report the compiled-in
+    // number as though it described the machine.
+    result.window_is_stale =
+        !result.installed.empty() && is_newer(result.installed, current_version());
 
     // curl_global_init() is not thread-safe and must run once before any
     // curl_easy_init(). This runs on a worker thread, and the addon in the same
@@ -213,7 +228,6 @@ Check check() {
     CURL *curl = curl_easy_init();
     if (curl == nullptr) {
         result.error = "Không khởi tạo được libcurl.";
-        detect_method(result);
         return result;
     }
 
@@ -253,11 +267,22 @@ Check check() {
         if (result.latest.empty()) {
             result.error = "Không đọc được số phiên bản từ GitHub.";
         } else {
-            result.newer = is_newer(result.latest, current_version());
+            result.newer = is_newer(result.latest, effective_version(result));
         }
     }
 
-    detect_method(result);
+    // Also measured against what is installed rather than what is running. A
+    // window left open across an upgrade would otherwise keep offering the
+    // upgrade it already performed.
+    result.upgradable = !result.candidate.empty() &&
+                        is_newer(result.candidate, effective_version(result));
+    if (result.method == Method::Dnf) {
+        // dnf has no cheap offline equivalent of apt-cache policy, and
+        // `dnf check-update` hits the network on its own — which this window has
+        // already done once. GitHub's release stands in for the candidate.
+        result.candidate = result.latest;
+        result.upgradable = result.newer;
+    }
     return result;
 }
 

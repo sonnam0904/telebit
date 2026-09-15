@@ -31,7 +31,22 @@ struct Check {
     // checked", never as "you are up to date".
     std::string latest;  // "2.15.0", without the tag's leading v
     std::string error;
-    bool newer = false;  // latest is strictly newer than the running version
+    bool newer = false;  // latest is strictly newer than what is installed
+
+    // What the package database says is installed, which is not the same thing
+    // as the version compiled into this process. An upgrade replaces the binary
+    // on disk while the window keeps running the old inode — so after pressing
+    // the update button, the compiled-in number is stale by construction, and
+    // reporting it would tell the user the upgrade did nothing.
+    //
+    // Empty when no package manager knows about Telebit, in which case the
+    // running version is the only answer available.
+    std::string installed;
+
+    // The running process is older than what is installed: the upgrade landed,
+    // but this window is still the previous binary and has to be reopened
+    // before it can describe itself accurately.
+    bool window_is_stale = false;
 
     // The upgrade half.
     Method method = Method::Unknown;
@@ -56,8 +71,17 @@ struct Check {
 // shows a user, since the suffix names the build suite and not the release.
 std::string version_core(const std::string &version);
 
-// The running version, as compiled in, through version_core().
+// The running version, as compiled in, through version_core(). This describes
+// the process, not the machine — see Check::installed.
 std::string current_version();
+
+// The version the package database holds, or empty when neither dpkg nor rpm
+// has heard of Telebit. Blocking: spawns the package tool.
+std::string installed_version();
+
+// What the window should call "the installed Telebit": the package database's
+// answer when there is one, else the running process's own.
+std::string effective_version(const Check &check);
 
 // Blocking. Safe to call when offline: the result then carries `error`.
 Check check();

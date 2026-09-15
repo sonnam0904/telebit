@@ -1,5 +1,10 @@
 #include "setup_page.h"
 
+// getpid(), for the helper that waits on this process before relaunching it.
+// Included explicitly rather than relied on through glib's headers, which is
+// not a promise glib makes.
+#include <unistd.h>
+
 #include <map>
 #include <string>
 #include <vector>
@@ -14,6 +19,18 @@ namespace telebit::setup {
 struct OptionRow {
     std::string key;  // the fcitx5 configuration key, e.g. "SpellCheckRestore"
     GtkWidget *toggle = nullptr;
+};
+
+// What the single button in the version row does right now. One button with a
+// mode rather than four buttons that are hidden most of the time: the row has
+// space for one control, and which one it is depends entirely on what the
+// release check found.
+enum class UpdateAction {
+    None,
+    Upgrade,        // run the package manager under pkexec
+    OpenReleases,   // no package manager can help; hand it to the browser
+    Relaunch,       // the binary on disk is newer than this process
+    CancelRelaunch  // a countdown is running and this aborts it
 };
 
 struct SetupPage {
@@ -42,6 +59,14 @@ struct SetupPage {
     GtkWidget *update_button = nullptr;
     GtkWidget *update_spinner = nullptr;
     update::Check latest;
+
+    UpdateAction update_action = UpdateAction::None;
+
+    // The countdown that runs after a successful upgrade, before this window
+    // replaces itself. Non-zero timer id means one is in flight, which is also
+    // what makes the button mean "cancel".
+    guint relaunch_timer = 0;
+    int relaunch_left = 0;
 
     // Set while the widgets are being filled in from fcitx5, so the handlers
     // that write back do not fire for values they just read.
@@ -253,6 +278,129 @@ void start_version_check(SetupPage *page) {
 }
 
 // ---------------------------------------------------------------------------
+// Replacing this window with the version that was just installed
+
+// Seconds of grace before the window replaces itself, and the button that
+// aborts it. An upgrade the user asked for still should not make a window
+// vanish without warning.
+constexpr int kRelaunchDelaySeconds = 3;
+
+// How long the helper waits for this process to go away before giving up, in
+// tenths of a second. Bounded so a window that somehow never exits leaves a
+// shell spinning for 10 seconds rather than forever.
+constexpr const char *kRelaunchWaitTenths = "100";
+
+// Where the replacement comes from. Deliberately NOT /proc/self/exe: after an
+// in-place upgrade that resolves to the unlinked inode this process is still
+// running ("/usr/bin/telebit-setup (deleted)"), which would relaunch the very
+// binary being replaced. PATH gives the file that is on disk now, which is
+// exactly what the package manager just wrote.
+std::string replacement_binary() {
+    char *found = g_find_program_in_path("telebit-setup");
+    std::string path = found != nullptr ? found : "";
+    g_free(found);
+    return path;
+}
+
+// Spawns a helper that waits for THIS process to exit and only then starts the
+// new one, and returns false without spawning anything if it cannot.
+//
+// The order is the whole point. GtkApplication is single-instance: a second
+// telebit-setup started while this one still owns the bus name registers as a
+// remote instance, forwards an "activate" to us, and exits immediately. Spawn
+// first and quit second, and the result is no window at all — which is exactly
+// what happens when you launch a second copy by hand.
+bool spawn_replacement(SetupPage *page) {
+    const std::string binary = replacement_binary();
+    if (binary.empty()) return false;
+
+    // Quoted for the shell: the path comes from PATH rather than from user
+    // input, but a prefix with a space in it is not a reason to misbehave.
+    char *quoted = g_shell_quote(binary.c_str());
+    std::string script = "i=0; while kill -0 " + std::to_string(getpid()) +
+                         " 2>/dev/null && [ $i -lt " + kRelaunchWaitTenths +
+                         " ]; do i=$((i+1)); sleep 0.1; done; exec " + quoted;
+    g_free(quoted);
+
+    const char *argv[] = {"sh", "-c", script.c_str(), nullptr};
+    GError *error = nullptr;
+    const gboolean ok =
+        g_spawn_async(nullptr, const_cast<char **>(argv), nullptr,
+                      static_cast<GSpawnFlags>(G_SPAWN_SEARCH_PATH), nullptr, nullptr, nullptr,
+                      &error);
+    if (ok == 0) {
+        gtk_label_set_text(GTK_LABEL(page->version_note),
+                           error != nullptr && error->message != nullptr
+                               ? error->message
+                               : "Không mở lại được cửa sổ. Đóng và mở lại telebit-setup.");
+        if (error != nullptr) g_error_free(error);
+        return false;
+    }
+    return true;
+}
+
+void cancel_relaunch(SetupPage *page) {
+    if (page->relaunch_timer != 0) {
+        g_source_remove(page->relaunch_timer);
+        page->relaunch_timer = 0;
+    }
+    page->update_action = UpdateAction::Relaunch;
+    gtk_button_set_label(GTK_BUTTON(page->update_button), "Mở lại");
+    gtk_label_set_text(GTK_LABEL(page->version_note),
+                       "Đã cập nhật. Cửa sổ này vẫn đang chạy bản cũ — bấm “Mở lại” khi bạn "
+                       "sẵn sàng.");
+}
+
+gboolean tick_relaunch(gpointer data) {
+    auto *page = static_cast<SetupPage *>(data);
+    if (page->closed) {
+        page->relaunch_timer = 0;
+        return G_SOURCE_REMOVE;
+    }
+
+    if (--page->relaunch_left > 0) {
+        gtk_label_set_text(GTK_LABEL(page->version_note),
+                           ("Đã cập nhật. Mở lại cửa sổ sau " +
+                            std::to_string(page->relaunch_left) + "…")
+                               .c_str());
+        return G_SOURCE_CONTINUE;
+    }
+
+    page->relaunch_timer = 0;
+    // Only quit once the helper is confirmed running, so a failed spawn leaves
+    // the user with this window and an explanation instead of nothing at all.
+    if (!spawn_replacement(page)) {
+        cancel_relaunch(page);
+        return G_SOURCE_REMOVE;
+    }
+    g_application_quit(G_APPLICATION(page->app));
+    return G_SOURCE_REMOVE;
+}
+
+void start_relaunch_countdown(SetupPage *page) {
+    // Nothing to relaunch into: say what is true and stop there.
+    if (replacement_binary().empty()) {
+        gtk_label_set_text(
+            GTK_LABEL(page->version_note),
+            "Đã cập nhật. Bấm “Khởi động lại” bên trên để fcitx5 nạp addon mới, rồi đóng và mở "
+            "lại cửa sổ này");
+        gtk_widget_set_visible(page->update_button, FALSE);
+        page->update_action = UpdateAction::None;
+        return;
+    }
+
+    page->relaunch_left = kRelaunchDelaySeconds;
+    page->update_action = UpdateAction::CancelRelaunch;
+    gtk_button_set_label(GTK_BUTTON(page->update_button), "Huỷ");
+    gtk_widget_set_visible(page->update_button, TRUE);
+    gtk_widget_set_sensitive(page->update_button, TRUE);
+    gtk_label_set_text(
+        GTK_LABEL(page->version_note),
+        ("Đã cập nhật. Mở lại cửa sổ sau " + std::to_string(page->relaunch_left) + "…").c_str());
+    page->relaunch_timer = g_timeout_add_seconds(1, tick_relaunch, page);
+}
+
+// ---------------------------------------------------------------------------
 // The upgrade itself
 
 void on_upgrade_finished(GObject *source, GAsyncResult *result, gpointer data) {
@@ -272,9 +420,12 @@ void on_upgrade_finished(GObject *source, GAsyncResult *result, gpointer data) {
         gtk_widget_set_sensitive(page->update_button, TRUE);
 
         if (succeeded != 0) {
-            gtk_widget_set_visible(page->update_button, FALSE);
-            gtk_label_set_text(GTK_LABEL(page->version_note),
-                               "Đã cập nhật. Bấm “Khởi động lại” bên dưới để fcitx5 nạp bản mới.");
+            // The upgrade replaced this very binary on disk, so the window is
+            // now the old version and no button on this page can turn it into
+            // the new one. It replaces itself instead — after a countdown,
+            // because a window that disappears on its own is alarming even when
+            // it was asked for.
+            start_relaunch_countdown(page);
         } else if (status == 126 || status == 127) {
             // pkexec's own exit codes: the authorisation dialog was dismissed,
             // or the user is not allowed to run it at all. Neither is a failed
@@ -302,12 +453,24 @@ void on_update_clicked(GtkButton *, gpointer data) {
     auto *page = static_cast<SetupPage *>(data);
     const update::Check &check = page->latest;
 
-    // Nothing a package manager on this machine can do: hand it to the browser
-    // rather than run a command that would report success and change nothing.
-    if (!check.upgradable) {
-        gtk_show_uri(GTK_WINDOW(gtk_widget_get_root(page->update_button)),
-                     update::releases_url(), GDK_CURRENT_TIME);
-        return;
+    switch (page->update_action) {
+        case UpdateAction::CancelRelaunch:
+            cancel_relaunch(page);
+            return;
+        case UpdateAction::Relaunch:
+            if (spawn_replacement(page)) g_application_quit(G_APPLICATION(page->app));
+            return;
+        case UpdateAction::OpenReleases:
+            // Nothing a package manager on this machine can do: hand it to the
+            // browser rather than run a command that would report success and
+            // change nothing.
+            gtk_show_uri(GTK_WINDOW(gtk_widget_get_root(page->update_button)),
+                         update::releases_url(), GDK_CURRENT_TIME);
+            return;
+        case UpdateAction::None:
+            return;
+        case UpdateAction::Upgrade:
+            break;
     }
 
     const char *manager = check.method == update::Method::Dnf ? "dnf" : "apt-get";
@@ -346,28 +509,62 @@ void on_update_clicked(GtkButton *, gpointer data) {
     g_subprocess_communicate_utf8_async(process, nullptr, nullptr, on_upgrade_finished, page);
 }
 
+// Appended to whatever else the row has to say. An upgrade replaces the binary
+// under a running window, so this process can be the *old* Telebit while the
+// machine already has the new one — after an upgrade done here, but also after
+// one done in a terminal while this window sat open.
+std::string stale_window_note(const update::Check &check) {
+    if (!check.window_is_stale) return {};
+    return " Cửa sổ này vẫn đang chạy bản " + update::current_version() + ".";
+}
+
+// Offers the relaunch on a row that has no upgrade to offer. Returns true when
+// it took the button, so the caller leaves it alone.
+bool offer_relaunch(SetupPage *page) {
+    if (!page->latest.window_is_stale || replacement_binary().empty()) {
+        gtk_widget_set_visible(page->update_button, FALSE);
+        page->update_action = UpdateAction::None;
+        return false;
+    }
+    // No countdown here: nothing just happened in this window, so closing it
+    // unprompted would be pure surprise. The upgrade path starts a countdown
+    // because the user asked for the upgrade a moment earlier.
+    page->update_action = UpdateAction::Relaunch;
+    gtk_button_set_label(GTK_BUTTON(page->update_button), "Mở lại");
+    gtk_widget_set_visible(page->update_button, TRUE);
+    return true;
+}
+
 void show_version(SetupPage *page) {
     const update::Check &check = page->latest;
+    // A countdown owns the row until it finishes or is cancelled; a background
+    // check landing mid-count must not relabel the button out from under it.
+    if (page->relaunch_timer != 0) return;
+    // The package database's answer, not this process's compiled-in constant:
+    // the row describes the Telebit installed on the machine.
     gtk_label_set_text(GTK_LABEL(page->version_title),
-                       ("Telebit " + update::current_version()).c_str());
+                       ("Telebit " + update::effective_version(check)).c_str());
 
     if (check.latest.empty()) {
         // Offline, rate-limited, or an unreadable answer. None of those is
         // evidence that this is the newest version, so the row must not say so.
-        gtk_label_set_text(GTK_LABEL(page->version_note),
-                           check.error.empty() ? "Chưa kiểm tra được bản mới."
-                                               : check.error.c_str());
-        gtk_widget_set_visible(page->update_button, FALSE);
+        const std::string note =
+            (check.error.empty() ? std::string("Chưa kiểm tra được bản mới.") : check.error) +
+            stale_window_note(check);
+        gtk_label_set_text(GTK_LABEL(page->version_note), note.c_str());
+        offer_relaunch(page);
         return;
     }
 
     if (!check.newer) {
-        gtk_label_set_text(GTK_LABEL(page->version_note), "Đang dùng bản mới nhất.");
-        gtk_widget_set_visible(page->update_button, FALSE);
+        const std::string note = "Đang dùng bản mới nhất." + stale_window_note(check);
+        gtk_label_set_text(GTK_LABEL(page->version_note), note.c_str());
+        offer_relaunch(page);
         return;
     }
 
     if (check.upgradable) {
+        page->update_action = UpdateAction::Upgrade;
         // Labelled with what the package manager will install, not with what
         // GitHub announced — the two differ whenever the repo index is behind.
         const std::string installing = update::version_core(check.candidate);
@@ -383,6 +580,7 @@ void show_version(SetupPage *page) {
         // GitHub has it, this machine's package manager does not — either the
         // repo index is stale, or Telebit was not installed from a repo at all.
         // Sending the user to the releases page is the only honest action left.
+        page->update_action = UpdateAction::OpenReleases;
         gtk_button_set_label(GTK_BUTTON(page->update_button), ("Xem bản " + check.latest).c_str());
         gtk_label_set_text(
             GTK_LABEL(page->version_note),
