@@ -1,3 +1,10 @@
+## [2.15.1](https://github.com/sonnam0904/telebit/compare/v2.15.0...v2.15.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* **gui:** enhance update process with relaunch functionality ([edcc7a8](https://github.com/sonnam0904/telebit/commit/edcc7a82162f576207304fe5a2d044d06b39b05e))
+
 # [2.15.0](https://github.com/sonnam0904/telebit/compare/v2.14.0...v2.15.0) (2026-09-15)
 
 
